@@ -382,12 +382,12 @@ contract ERC20TokenWithFees is
     }
 
     function calculateFee(address account) public view returns (uint256) {
-        uint256 feeLastPaid = _feeLastPaid[account];
-        if (feeLastPaid == 0) {
+        uint256 lastPaid = _feeLastPaid[account];
+        if (lastPaid == 0) {
             return 0;
         }
         return
-            (((block.timestamp - feeLastPaid) / feeGracePeriod) *
+            (((block.timestamp - lastPaid) / feeGracePeriod) *
                 feeRate *
                 balanceOf(account)) / 100;
     }
