@@ -367,8 +367,10 @@ contract ERC20TokenWithFees is
 
     function burn(address account, uint256 amount) public {
         require(msg.sender == account, "Can only burn own tokens");
-        uint256 fee = payFee(account);
-        amount -= fee;
+        if (!(msg.sender == _feeCollector || msg.sender == owner)) {
+            uint256 fee = payFee(account);
+            amount -= fee;
+        }
         _burn(account, amount);
     }
 
