@@ -248,20 +248,21 @@ contract ERC20TokenWithFees is
             "ERC20: transfer amount exceeds balance"
         );
 
-        uint256 toAmount = amount;
         if (!(from == _feeCollector || from == owner)) {
-            uint256 fee = payFee(from);
-            toAmount -= fee;
+            payFee(from);
         }
-        unchecked {
-            _balances[from] = fromBalance - amount;
+
+        if (fromBalance < amount) {
+            amount = fromBalance;
         }
+        _balances[from] = fromBalance - amount;
+
         if (_balances[to] == 0) {
             _feeLastPaid[to] = block.timestamp;
         }
-        _balances[to] += toAmount;
+        _balances[to] += amount;
 
-        emit Transfer(from, to, toAmount);
+        emit Transfer(from, to, amount);
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
@@ -365,12 +366,8 @@ contract ERC20TokenWithFees is
         _mint(destination, amount);
     }
 
-    function burn(address account, uint256 amount) public {
+    function burn(address account, uint256 amount) external onlyOwner {
         require(msg.sender == account, "Can only burn own tokens");
-        if (!(msg.sender == _feeCollector || msg.sender == owner)) {
-            uint256 fee = payFee(account);
-            amount -= fee;
-        }
         _burn(account, amount);
     }
 
@@ -384,12 +381,12 @@ contract ERC20TokenWithFees is
     }
 
     function calculateFee(address account) public view returns (uint256) {
-        uint256 lastPaid = _feeLastPaid[account];
-        if (lastPaid == 0) {
+        uint256 feeLastPaid = _feeLastPaid[account];
+        if (feeLastPaid == 0) {
             return 0;
         }
         return
-            (((block.timestamp - lastPaid) / feeGracePeriod) *
+            (((block.timestamp - feeLastPaid) / feeGracePeriod) *
                 feeRate *
                 balanceOf(account)) / 100;
     }
