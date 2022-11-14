@@ -26,5 +26,13 @@ abstract contract DelegatedFeeCollector is Owned {
 
     function setFeeCollector(address feeCollector_) external onlyOwner {
         _feeCollector = feeCollector_;
+        emit FeeCollectorChanged(feeCollector_);
     }
+
+    // events
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event FeeCollectorChanged(address indexed newCollector);
 }

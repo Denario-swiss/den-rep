@@ -6,8 +6,9 @@ import "./openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "./openzeppelin-contracts/utils/Context.sol";
 import "./openzeppelin-contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./DelegatedFeeCollector.sol";
+import "hardhat/console.sol";
 
-contract ERC20TokenWithFees is
+contract ERC20WithFees is
     Context,
     IERC20,
     IERC20Metadata,
@@ -26,6 +27,9 @@ contract ERC20TokenWithFees is
     string private _name;
     string private _symbol;
 
+    /**
+     * @dev fee rate expresses the percentage of the fees owed / month.
+     */
     uint256 public feeRate;
     uint256 public feeGracePeriod;
 
@@ -83,7 +87,8 @@ contract ERC20TokenWithFees is
         override
         returns (uint256)
     {
-        return _balances[account];
+        uint256 fee = calculateFee(account);
+        return _balances[account] - fee;
     }
 
     /**
@@ -241,24 +246,25 @@ contract ERC20TokenWithFees is
     ) internal virtual {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
-
         uint256 fromBalance = _balances[from];
+
         require(
             fromBalance >= amount,
             "ERC20: transfer amount exceeds balance"
         );
 
-        if (!(from == _feeCollector || from == owner)) {
-            payFee(from);
-        }
+        uint256 senderFee = _payFee(from);
 
-        if (fromBalance < amount) {
+        if (senderFee + amount >= fromBalance) {
             amount = fromBalance;
         }
-        _balances[from] = fromBalance - amount;
+        _payFee(to);
 
-        if (_balances[to] == 0) {
-            _feeLastPaid[to] = block.timestamp;
+        unchecked {
+            _balances[from] = fromBalance - amount;
+        }
+        if (_balances[from] == 0) {
+            _feeLastPaid[from] = 0;
         }
         _balances[to] += amount;
 
@@ -279,6 +285,8 @@ contract ERC20TokenWithFees is
 
         _totalSupply += amount;
         _balances[account] += amount;
+        _feeLastPaid[account] = block.timestamp;
+
         emit Transfer(address(0), account, amount);
     }
 
@@ -294,8 +302,6 @@ contract ERC20TokenWithFees is
      * - `account` must have at least `amount` tokens.
      */
     function _burn(address account, uint256 amount) internal virtual {
-        require(account != address(0), "ERC20: burn from the zero address");
-
         uint256 accountBalance = _balances[account];
         require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
         unchecked {
@@ -356,8 +362,6 @@ contract ERC20TokenWithFees is
         }
     }
 
-    // *******************
-    // additional functionality
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
@@ -366,10 +370,20 @@ contract ERC20TokenWithFees is
         _mint(destination, amount);
     }
 
-    function burn(address account, uint256 amount) external onlyOwner {
-        require(msg.sender == account, "Can only burn own tokens");
+    function burn(uint256 amount) external {
+        address account = _msgSender();
+        uint256 fee = _payFee(account);
+        if (amount > _balances[account] - fee) {
+            amount = _balances[account];
+            _feeLastPaid[account] = 0;
+        }
         _burn(account, amount);
+        if (_balances[account] == 0) {
+            _feeLastPaid[account] = 0;
+        }
     }
+
+    // Token specific funtions to calculate and collect fees
 
     function feeLastPaid(address account)
         public
@@ -381,35 +395,41 @@ contract ERC20TokenWithFees is
     }
 
     function calculateFee(address account) public view returns (uint256) {
-        uint256 feeLastPaid = _feeLastPaid[account];
-        if (feeLastPaid == 0) {
+        if (_feeLastPaid[account] == 0 || _balances[account] == 0) {
             return 0;
         }
+
         return
-            (((block.timestamp - feeLastPaid) / feeGracePeriod) *
+            (((block.timestamp - _feeLastPaid[account])) *
                 feeRate *
-                balanceOf(account)) / 100;
+                _balances[account]) / (100 * 60 * 60 * 24 * 30);
     }
 
-    function payFee(address account) internal returns (uint256) {
+    function _payFee(address account) internal returns (uint256) {
         uint256 fee = calculateFee(account);
+        console.log("contract Fee: ", fee);
         if (fee > 0) {
             _balances[account] -= fee;
             _balances[_feeCollector] += fee;
-            _feeLastPaid[account] = block.timestamp;
+            emit Transfer(account, _feeCollector, fee);
         }
+        _feeLastPaid[account] = block.timestamp;
 
         return fee;
     }
 
-    function collectFees(address account) external onlyFeeCollector {
+    function collectFees(address account) external {
+        require(_balances[account] > 0, "No balance to collect");
         uint256 lastFeePaid = _feeLastPaid[account];
+
         require(
             block.timestamp - lastFeePaid > feeGracePeriod || lastFeePaid == 0,
-            "Can not collect yet"
+            "Grace period has not ended. Cannot force fee collection yet."
         );
-        require(_balances[account] > 0, "Not holding");
-        uint256 fee = payFee(account);
+        uint256 fee = _payFee(account);
+        if (_balances[account] == 0) {
+            _feeLastPaid[account] = 0;
+        }
         emit FeeCollected(account, fee);
     }
 
