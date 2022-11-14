@@ -39,7 +39,8 @@ const setup = deployments.createFixture(async () => {
 			symbol: process.env.DEPLOY_DATA_SYMBOL,
 			decimals: BigNumber.from(process.env.DEPLOY_DATA_DECIMALS),
 			feeRate: BigNumber.from(process.env.DEPLOY_DATA_FEE_RATE),
-			feeGracePeriod: BigNumber.from(process.env.DEPLOY_DATA_FEE_GRACE_PERIOD)
+			feeGracePeriod: BigNumber.from(process.env.DEPLOY_DATA_FEE_GRACE_PERIOD),
+			initialSupply: ethers.utils.parseUnits(process.env.DEPLOY_DATA_INITIAL_SUPPLY ? process.env.DEPLOY_DATA_INITIAL_SUPPLY : "0", 18)
 		}
 	};
 });
@@ -54,9 +55,8 @@ describe('StakingRewards', () => {
 			expect(await ERC20WithFees.decimals()).to.equal(data.decimals);
 			expect(await ERC20WithFees.feeRate()).to.equal(data.feeRate);
 			expect(await ERC20WithFees.feeGracePeriod()).to.equal(data.feeGracePeriod);
-			expect(await ERC20WithFees.feeCollector()).to.equal(feeCollector.address);
 
-			expect(await ERC20WithFees.totalSupply()).to.equal(ethers.utils.parseUnits('0', DECIMALS));
+			expect(await ERC20WithFees.totalSupply()).to.equal(data.initialSupply);
 
 		});
 	});
@@ -99,7 +99,7 @@ describe('StakingRewards', () => {
 		});
 
 		it('Receiving tokens updates', async () => {
-			const { ERC20WithFees, users } = await setup();
+			const { ERC20WithFees, users, feeCollector } = await setup();
 
 			let sender = users[0];
 			let receiver = users[1];
@@ -109,9 +109,20 @@ describe('StakingRewards', () => {
 			await ERC20WithFees.mint(sender.address, AMOUNT)
 			let feeLastPaid = await ERC20WithFees.feeLastPaid(receiver.address)
 
+
+
 			expect(feeLastPaid).to.equal(BigNumber.from(0));
 
-			await sender.ERC20WithFees.transfer(receiver.address, ethers.utils.parseUnits('1', 18));
+			const amount = ethers.utils.parseUnits('1', 18);
+
+			const dueFees = await ERC20WithFees.calculateFee(sender.address)
+			console.log("dueFees", dueFees.toString())
+
+			await expect(sender.ERC20WithFees.transfer(receiver.address, amount))
+				.to.emit(ERC20WithFees, "Transfer").withArgs(sender.address, receiver.address, amount)
+				.to.emit(ERC20WithFees, "Transfer");
+
+
 			const timeStamp = await time.latest()
 
 			feeLastPaid = await ERC20WithFees.feeLastPaid(receiver.address)

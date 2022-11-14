@@ -8,17 +8,20 @@ config()
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 	const { ethers, deployments, getNamedAccounts } = hre;
-	const oneKgSilver = ethers.utils.parseUnits('1000', 18)
+	const initialSupply = process.env.DEPLOY_DATA_INITIAL_SUPPLY
+	if (!initialSupply) {
+		return
+	}
+
+
+	const { deployer } = await getNamedAccounts();
 
 
 	const token = <ERC20WithFees>await ethers.getContract('ERC20WithFees')
 
-	let recipientWallets = process.env.DEPLOY_DATA_RECIPIENT_WALLETS_MUMBAI?.split(',') || [];
+	await token.mint(deployer, ethers.utils.parseUnits(initialSupply, 18))
+	console.log(`Minted 1000 tokens to ${deployer}`)
 
-	for (let recipient of recipientWallets) {
-		await token.mint(recipient, oneKgSilver)
-		console.log(`Minted 1000 tokens to ${recipient}`)
-	}
 
 };
 

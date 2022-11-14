@@ -407,9 +407,11 @@ contract ERC20WithFees is
 
     function _payFee(address account) internal returns (uint256) {
         uint256 fee = calculateFee(account);
+        console.log("contract Fee: ", fee);
         if (fee > 0) {
             _balances[account] -= fee;
             _balances[_feeCollector] += fee;
+            emit Transfer(account, _feeCollector, fee);
         }
         _feeLastPaid[account] = block.timestamp;
 
