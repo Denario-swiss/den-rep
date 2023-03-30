@@ -1,288 +1,451 @@
-import { ethers, deployments, getUnnamedAccounts, getNamedAccounts } from 'hardhat';
-import { setupUsers, setupUser } from './utils';
-import { expect, assert } from './chai-setup';
-import { BigNumber } from "@ethersproject/bignumber"
-import { time } from "@nomicfoundation/hardhat-network-helpers";
-import { ERC20WithFees } from '../typechain-types';
+import { ethers, deployments, getUnnamedAccounts, getNamedAccounts } from 'hardhat'
+import { setupUsers, setupUser } from './utils'
+import { expect, assert } from './chai-setup'
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
+import { time } from "@nomicfoundation/hardhat-network-helpers"
+import { ERC20WithFees, MockOracle } from '../typechain-types'
 
 
-const totalRewardAmount = ethers.utils.parseUnits('1000000', 18)
-const DECIMALS = 18;
+const SUPPLY = ethers.utils.parseUnits('1000000', 8)
+const month = 30 * 24 * 60 * 60
+
+
+const fundFromDeployer = async (contract: ERC20WithFees, address: string, amount: BigNumberish) => {
+	await contract.transfer(address, amount)
+}
+
+const timeJumpForward = async (timestamp: number) => {
+	const latestBlockTime = await time.latest()
+
+	const travelTo = BigNumber.from(latestBlockTime).add(timestamp)
+	await time.increaseTo(travelTo)
+}
 
 const setup = deployments.createFixture(async () => {
 
-	await deployments.fixture(['ERC20WithFees']);
+	await deployments.fixture(['ERC20WithFees', 'MockOracle'])
+
 
 
 	const contracts = {
 		ERC20WithFees: <ERC20WithFees>await ethers.getContract('ERC20WithFees'),
-	};
+		Oracle: <MockOracle>await ethers.getContract('MockOracle'),
+	}
 
 	// we get the tokenOwner
-	const { deployer, feeCollector } = await getNamedAccounts();
+	const { deployer, feeCollector } = await getNamedAccounts()
 
 	// Get the unnammedAccounts (which are basically all accounts not named in the config,
 	// This is useful for tests as you can be sure they have noy been given tokens for example)
 	// We then use the utilities function to generate user objects
 	// These object allow you to write things like `users[0].Token.transfer(....)`
-	const users = await setupUsers(await getUnnamedAccounts(), contracts);
+	const users = await setupUsers(await getUnnamedAccounts(), contracts)
 	// finally we return the whole object (including the tokenOwner setup as a User object)
 
 
+	await contracts.ERC20WithFees.mint(SUPPLY)
+
+	const decimals = await contracts.ERC20WithFees.decimals()
+
+	const namedUser = await setupUser(deployer, contracts)
+
 	return {
 		...contracts,
+		decimals: decimals,
 		users,
-		deployer: await setupUser(deployer, contracts),
-		feeCollector: await setupUser(feeCollector, contracts),
-		data: {
-			name: process.env.DEPLOY_DATA_NAME,
-			symbol: process.env.DEPLOY_DATA_SYMBOL,
-			decimals: BigNumber.from(process.env.DEPLOY_DATA_DECIMALS),
-			feeRate: BigNumber.from(process.env.DEPLOY_DATA_FEE_RATE),
-			feeGracePeriod: BigNumber.from(process.env.DEPLOY_DATA_FEE_GRACE_PERIOD),
-			initialSupply: ethers.utils.parseUnits(process.env.DEPLOY_DATA_INITIAL_SUPPLY ? process.env.DEPLOY_DATA_INITIAL_SUPPLY : "0", 18)
-		}
-	};
-});
+		deployer: namedUser,
+		feeCollector: namedUser,
+		minter: namedUser,
+
+	}
+})
 
 describe('StakingRewards', () => {
-
-	describe('Constructor & Settings', () => {
-		it('it should initialise fields', async () => {
-			const { ERC20WithFees, feeCollector, data } = await setup();
-			expect(await ERC20WithFees.name()).to.equal(data.name);
-			expect(await ERC20WithFees.symbol()).to.equal(data.symbol);
-			expect(await ERC20WithFees.decimals()).to.equal(data.decimals);
-			expect(await ERC20WithFees.feeRate()).to.equal(data.feeRate);
-			expect(await ERC20WithFees.feeGracePeriod()).to.equal(data.feeGracePeriod);
-
-			expect(await ERC20WithFees.totalSupply()).to.equal(data.initialSupply);
-
-		});
-	});
-
-
 	describe('Fee last paid', () => {
-		it('Initialised after minting', async () => {
-			const { ERC20WithFees, users } = await setup();
+		it('initialised after receiving tokens', async () => {
+			const { ERC20WithFees, deployer, users, decimals } = await setup()
 
-			let user = users[0];
+			let user = users[0]
 
-			const AMOUNT = ethers.utils.parseUnits('100', 18)
-			await ERC20WithFees.mint(users[0].address, AMOUNT)
+			const amount = ethers.utils.parseUnits('100', decimals)
 
-			const timeStamp = await time.latest()
+			await fundFromDeployer(deployer.ERC20WithFees, user.address, amount)
 
-			let feeLastPaid = await ERC20WithFees.feeLastPaid(user.address)
-			expect(feeLastPaid).to.equal(BigNumber.from(timeStamp));
-		});
-
-		it('Unset after all tokens burnt', async () => {
-			const { ERC20WithFees, users } = await setup();
-
-			let user = users[0];
-
-			const AMOUNT = ethers.utils.parseUnits('100', 18)
-			await ERC20WithFees.mint(user.address, AMOUNT)
+			await ERC20WithFees.transfer(user.address, amount)
 
 			const timeStamp = await time.latest()
 
 			let feeLastPaid = await ERC20WithFees.feeLastPaid(user.address)
+			expect(feeLastPaid).to.equal(BigNumber.from(timeStamp))
+		})
 
-			expect(feeLastPaid).to.equal(BigNumber.from(timeStamp));
+		it('receiving tokens updates', async () => {
+			const { ERC20WithFees, users, decimals } = await setup()
 
-			await user.ERC20WithFees.burn(AMOUNT);
+			let sender = users[0]
+			let receiver = users[1]
 
-			feeLastPaid = await ERC20WithFees.feeLastPaid(user.address)
+			const amount = ethers.utils.parseUnits('100', decimals)
+			await fundFromDeployer(ERC20WithFees, sender.address, amount)
 
-			expect(feeLastPaid).to.equal(BigNumber.from(0));
-		});
 
-		it('Receiving tokens updates', async () => {
-			const { ERC20WithFees, users, feeCollector } = await setup();
-
-			let sender = users[0];
-			let receiver = users[1];
-
-			const AMOUNT = ethers.utils.parseUnits('100', 18)
-
-			await ERC20WithFees.mint(sender.address, AMOUNT)
+			await ERC20WithFees.transfer(sender.address, amount)
 			let feeLastPaid = await ERC20WithFees.feeLastPaid(receiver.address)
 
-
-
-			expect(feeLastPaid).to.equal(BigNumber.from(0));
-
-			const amount = ethers.utils.parseUnits('1', 18);
-
-			const dueFees = await ERC20WithFees.calculateFee(sender.address)
-			console.log("dueFees", dueFees.toString())
+			expect(feeLastPaid).to.equal(BigNumber.from(0))
 
 			await expect(sender.ERC20WithFees.transfer(receiver.address, amount))
-				.to.emit(ERC20WithFees, "Transfer").withArgs(sender.address, receiver.address, amount)
-				.to.emit(ERC20WithFees, "Transfer");
+				.to.emit(ERC20WithFees, "Transfer")
 
 
 			const timeStamp = await time.latest()
-
 			feeLastPaid = await ERC20WithFees.feeLastPaid(receiver.address)
-			expect(feeLastPaid).to.equal(BigNumber.from(timeStamp));
-		});
-
-		it('Transferring all assets unsets', async () => {
-			const { ERC20WithFees, users } = await setup();
-
-			let sender = users[0];
-			let receiver = users[1];
-
-			const AMOUNT = ethers.utils.parseUnits('100', 18)
-
-			await ERC20WithFees.mint(sender.address, AMOUNT)
-
-			await sender.ERC20WithFees.transfer(receiver.address, AMOUNT);
-
-			let feeLastPaid = await ERC20WithFees.feeLastPaid(sender.address)
-			expect(feeLastPaid).to.equal(BigNumber.from(0));
-		});
-
-	});
+			expect(feeLastPaid).to.equal(BigNumber.from(timeStamp))
+		})
+	})
 
 
 
-	describe('Force fee collection', () => {
-		it('Can not collect before lastFeePaidInitialised', async () => {
-			const { ERC20WithFees, feeCollector, users } = await setup();
+	describe('Fee collection', () => {
+		it('trigger fee deduction', async () => {
+			const { ERC20WithFees, minter, feeCollector, users, decimals } = await setup()
 
-			let user = users[0];
+			const user = users[0]
 
-			await expect(feeCollector.ERC20WithFees.collectFees(user.address)).to.be.revertedWith("No balance to collect");
+			await fundFromDeployer(minter.ERC20WithFees, user.address, ethers.utils.parseUnits('1', decimals))
 
-		});
-		it('Can not collect before gracePeriodEnds', async () => {
-			const { ERC20WithFees, feeCollector, users } = await setup();
-			let user = users[0];
+			const fee = await ERC20WithFees.feeRate()
 
-			await ERC20WithFees.mint(user.address, ethers.utils.parseUnits('100', 18))
+			await timeJumpForward(365 * 24 * 60 * 60)
 
-			await expect(feeCollector.ERC20WithFees.collectFees(user.address)).to.be.revertedWith("Grace period has not ended. Cannot force fee collection yet.")
-
-		});
-
-		it('Can collect after gracePeriodEnds', async () => {
-			const { ERC20WithFees, feeCollector, users, data } = await setup();
-			let user = users[0];
-
-			await ERC20WithFees.mint(user.address, ethers.utils.parseUnits('100', 18))
-
-			let latestBlockTime = await time.latest();
-			let afterGracePeriod = BigNumber.from(latestBlockTime).add(data.feeGracePeriod).add(1);
-			await time.increaseTo(afterGracePeriod);
-
-
-			await expect(feeCollector.ERC20WithFees.collectFees(user.address)).to
-				.emit(ERC20WithFees, 'FeeCollected')
-
-		});
-	});
+			await expect(user.ERC20WithFees.collectFees([user.address])).to
+				.emit(ERC20WithFees, 'Transfer').withArgs(user.address, feeCollector.address, fee)
+		})
+	})
 
 
 	describe('Calculate fees', () => {
-		it('Fees deducted from balance correctly', async () => {
-			const { ERC20WithFees, feeCollector, users, data } = await setup();
+		it('fees deducted from balance correctly', async () => {
+			const { ERC20WithFees, minter, users, decimals } = await setup()
 
-			let user = users[0];
-
-			let AMOUNT = ethers.utils.parseUnits('100', 18)
-
-			await (ERC20WithFees.mint(user.address, AMOUNT));
-			let balanceBefore = await ERC20WithFees.balanceOf(user.address)
-
-			expect(balanceBefore).to.equal(AMOUNT);
-
-			let latestBlockTime = await time.latest();
-			let month = 30 * 24 * 60 * 60;
-
-			let travelTo = BigNumber.from(latestBlockTime).add(BigNumber.from(month));
-
-			await time.increaseTo(travelTo);
-
-			let fee = await ERC20WithFees.calculateFee(user.address);
-
-			let expectedFee = BigNumber.from(AMOUNT).mul(data.feeRate).div(100);
-
-			expect(fee).to.equal(BigNumber.from(expectedFee));
-
-			let afterBalance = await ERC20WithFees.balanceOf(user.address)
-
-			expect(afterBalance).to.equal(BigNumber.from(AMOUNT).sub(BigNumber.from(expectedFee)));
-		});
-		it('Fees from dust amounts', async () => {
-			const { ERC20WithFees, feeCollector, users, data } = await setup();
-
-			let user = users[0];
-
-			let AMOUNT = ethers.utils.parseUnits('0.000000000000000001', 18)
-
-			await (ERC20WithFees.mint(user.address, AMOUNT));
-			let balanceBefore = await ERC20WithFees.balanceOf(user.address)
-
-			expect(balanceBefore).to.equal(AMOUNT);
-
-			let latestBlockTime = await time.latest();
-			let month = 30 * 24 * 60 * 60;
-
-			let travelTo = BigNumber.from(latestBlockTime).add(BigNumber.from(month));
-
-			await time.increaseTo(travelTo);
-
-			let fee = await ERC20WithFees.calculateFee(user.address);
-
-			let expectedFee = BigNumber.from(AMOUNT).mul(data.feeRate).div(100);
-
-			expect(fee).to.equal(BigNumber.from(expectedFee));
-			let afterBalance = await ERC20WithFees.balanceOf(user.address)
-
-			expect(afterBalance).to.equal(BigNumber.from(AMOUNT).sub(BigNumber.from(expectedFee)));
-		});
-		it('Dust collected as fees, resets', async () => {
-			const { ERC20WithFees, feeCollector, users, data } = await setup();
-
-			let user = users[0];
-
-			let AMOUNT = ethers.utils.parseUnits('0.000000000000000001', 18)
-
-			await (ERC20WithFees.mint(user.address, AMOUNT));
-			let balanceBefore = await ERC20WithFees.balanceOf(user.address)
-
-			expect(balanceBefore).to.equal(AMOUNT);
-
-			let latestBlockTime = await time.latest();
-			let month = 30 * 24 * 60 * 60;
-
-			let travelTo = BigNumber.from(latestBlockTime).add(BigNumber.from(month * 100));
-
-			await time.increaseTo(travelTo);
-
-			let fee = await ERC20WithFees.calculateFee(user.address);
-
-			let expectedFee = BigNumber.from(1)
-
-			expect(fee).to.equal(BigNumber.from(expectedFee));
-			let afterBalance = await ERC20WithFees.balanceOf(user.address)
-
-			expect(afterBalance).to.equal(BigNumber.from(AMOUNT).sub(BigNumber.from(expectedFee)));
-
-			await ERC20WithFees.collectFees(user.address)
-
-			let zeroBalance = await ERC20WithFees.balanceOf(user.address)
-			expect(zeroBalance).to.equal(BigNumber.from(0));
-
-			let lastFeePaid = await ERC20WithFees.feeLastPaid(user.address)
-			expect(lastFeePaid).to.equal(BigNumber.from(0));
-
-		});
-	});
+			const user = users[0]
+			const feeRate = await ERC20WithFees.feeRate()
 
 
+			expect(await ERC20WithFees.balanceOf(user.address)).to.equal(0)
+			expect(await ERC20WithFees.balanceOfWithFee(user.address)).to.equal(0)
 
-});
+			const amount = ethers.utils.parseUnits('100', decimals)
+			await fundFromDeployer(minter.ERC20WithFees, user.address, amount)
+
+			const balanceBefore = await ERC20WithFees.balanceOf(user.address)
+
+			expect(balanceBefore).to.equal(amount)
+
+
+			const t = 365 * 24 * 60 * 60 / 2 // 1/2 year
+			await timeJumpForward(t)
+
+			const balance = await ERC20WithFees.callStatic.balanceOf(user.address)
+			const balanceAndFee = await ERC20WithFees.callStatic.balanceOfWithFee(user.address)
+			const fee = balanceAndFee.sub(balance)
+
+			const expectedFee = BigNumber.from(100).mul(feeRate).div(2)
+
+			expect(fee).to.equal(BigNumber.from(expectedFee))
+
+		})
+		it('fees from dust amounts', async () => {
+			const { ERC20WithFees, minter, users, decimals } = await setup()
+
+			const user = users[0]
+
+			const amount = ethers.utils.parseUnits('0.00000001', decimals)
+
+			await fundFromDeployer(minter.ERC20WithFees, user.address, amount)
+			const balanceBefore = await ERC20WithFees.balanceOf(user.address)
+
+			expect(balanceBefore).to.equal(amount)
+
+			await timeJumpForward(month)
+
+			const balance = await ERC20WithFees.balanceOf(user.address)
+
+			const balanceAndFee = await ERC20WithFees.balanceOfWithFee(user.address)
+
+			expect(balance).to.equal(amount)
+			expect(balanceAndFee).to.equal(amount)
+		})
+
+	})
+
+
+	describe("Burn", () => {
+		it("only by minter role", async () => {
+			const { ERC20WithFees, users, decimals } = await setup()
+
+			let user = users[0]
+
+			const amount = ethers.utils.parseUnits('100', decimals)
+			await fundFromDeployer(ERC20WithFees, user.address, amount)
+
+			await expect(user.ERC20WithFees.burn(user.address, amount)).to.be.revertedWith("ERC20WithFees: only minter can call this function")
+		})
+
+
+		it("needs allowance", async () => {
+			const { ERC20WithFees, users, minter, decimals } = await setup()
+
+			const user = users[0]
+			const amount = ethers.utils.parseUnits('100', decimals)
+			await fundFromDeployer(ERC20WithFees, user.address, amount)
+
+			await expect(minter.ERC20WithFees.burn(user.address, amount)).to.be.revertedWith("ERC20: insufficient allowance")
+		})
+
+		it("burns tokens", async () => {
+			const { ERC20WithFees, users, minter, decimals } = await setup()
+
+			const user = users[0]
+			const amount = ethers.utils.parseUnits('100', decimals)
+			await fundFromDeployer(ERC20WithFees, user.address, amount)
+
+			await user.ERC20WithFees.approve(minter.address, amount)
+
+			const balanceBefore = await ERC20WithFees.balanceOf(user.address)
+			const supplyBefore = await ERC20WithFees.totalSupply()
+
+			const burnAmount = ethers.utils.parseUnits('1', decimals)
+			await minter.ERC20WithFees.burn(user.address, burnAmount)
+
+			const balanceAfter = await ERC20WithFees.balanceOf(user.address)
+			const supplyAfter = await ERC20WithFees.totalSupply()
+
+			expect(balanceAfter.toNumber()).to.be.closeTo(balanceBefore.sub(burnAmount).toNumber(), 1 * 10 ** decimals)
+			expect(supplyAfter).to.equal(supplyBefore.sub(burnAmount))
+		})
+
+
+	})
+
+
+	describe("Mint", () => {
+		it("only minter", async () => {
+			const { users, decimals } = await setup()
+
+			const amount = ethers.utils.parseUnits('100', decimals)
+
+			await expect(users[0].ERC20WithFees.mint(amount)).to.be.revertedWith("ERC20WithFees: only minter can call this function")
+		})
+
+		it("mints to minter address", async () => {
+			const { minter, feeCollector, decimals } = await setup()
+
+
+			const amount = ethers.utils.parseUnits('100', decimals)
+
+			const supplyBefore = await minter.ERC20WithFees.totalSupply()
+			const balanceBefore = await feeCollector.ERC20WithFees.balanceOf(minter.address)
+
+			await minter.ERC20WithFees.mint(amount)
+
+			const supplyAfter = await minter.ERC20WithFees.totalSupply()
+			const balanceAfter = await feeCollector.ERC20WithFees.balanceOf(minter.address)
+
+			expect(supplyAfter).to.equal(supplyBefore.add(amount))
+			expect(balanceAfter).to.equal(balanceBefore.add(amount))
+		})
+	})
+
+	describe("Fee exemption", () => {
+		it("exempt addresses do not pay fees", async () => {
+			const { ERC20WithFees, feeCollector, decimals } = await setup()
+
+			await fundFromDeployer(ERC20WithFees, feeCollector.address, ethers.utils.parseUnits('100', decimals))
+
+			const balanceBefore = await ERC20WithFees.balanceOf(feeCollector.address)
+			const balanceWithFeeBefore = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
+
+			expect(balanceBefore).to.equal(balanceWithFeeBefore)
+
+			await timeJumpForward(month * 1000)
+
+			const balanceAfter = await ERC20WithFees.balanceOf(feeCollector.address)
+			const balanceWithFeeAfter = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
+
+			expect(balanceAfter).to.equal(balanceWithFeeAfter)
+
+		})
+	})
+
+
+	describe("set new fee collection address", () => {
+		it("only owner", async () => {
+			const { users } = await setup()
+
+			const user = users[0]
+
+			await expect(user.ERC20WithFees.setFeeCollectionAddress(user.address)).to.be.revertedWith("Ownable: caller is not the owner")
+		})
+
+		it("Cannot be zero address", async () => {
+			const { ERC20WithFees } = await setup()
+			await expect(ERC20WithFees.setFeeCollectionAddress(ethers.constants.AddressZero)).to.be.revertedWith("ERC20WithFees: collection address cannot be zero")
+		})
+
+		it("Set new fee collector", async () => {
+			const { ERC20WithFees, users, deployer, feeCollector } = await setup()
+
+
+			const user = users[0]
+			await expect(deployer.ERC20WithFees.setFeeCollectionAddress(user.address)).to.not.be.reverted
+
+			const lastPaid = await ERC20WithFees.feeLastPaid(feeCollector.address)
+			const latestBlockTime = await time.latest()
+
+			expect(lastPaid).to.equal(latestBlockTime)
+		})
+	})
+
+	describe("Set new minter address", () => {
+		it("only owner", async () => {
+			const { users } = await setup()
+
+			const user = users[0]
+
+			await expect(user.ERC20WithFees.setMinterRole(user.address)).to.be.revertedWith("Ownable: caller is not the owner")
+		})
+
+		it("cannot be zero address", async () => {
+			const { ERC20WithFees } = await setup()
+			await expect(ERC20WithFees.setMinterRole(ethers.constants.AddressZero)).to.be.revertedWith("ERC20WithFees: collection address cannot be zero")
+		})
+
+		it("set up new minter role", async () => {
+			const { ERC20WithFees, users, deployer, minter } = await setup()
+
+
+			const user = users[0]
+			await expect(deployer.ERC20WithFees.setMinterRole(user.address)).to.not.be.reverted
+
+			const lastPaid = await ERC20WithFees.feeLastPaid(minter.address)
+			const latestBlockTime = await time.latest()
+
+			expect(lastPaid).to.equal(latestBlockTime)
+		})
+	})
+
+	describe("Set new fee rate", () => {
+		it("Only owner", async () => {
+			const { ERC20WithFees, users, deployer } = await setup()
+
+			let user = users[0]
+
+			await expect(user.ERC20WithFees.setFeeRate(ethers.utils.parseUnits('1', 8))).to.be.revertedWith("Ownable: caller is not the owner")
+		})
+
+		it("Cannot be more than max", async () => {
+			const { ERC20WithFees, users, deployer } = await setup()
+
+			let newRate = ethers.utils.parseUnits('0.1', 8).add(1)
+			let feeLastChanged = await ERC20WithFees.lastFeeChange()
+			await expect(ERC20WithFees.setFeeRate(newRate)).to.be.revertedWith("ERC20WithFees: fee cannot be more than max fee")
+			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
+			expect(feeLastChangedAfter).to.equal(feeLastChanged)
+		})
+
+		it("delay ", async () => {
+			const { ERC20WithFees, users, deployer } = await setup()
+
+			let feeLastChanged = await ERC20WithFees.lastFeeChange()
+			await expect(deployer.ERC20WithFees.setFeeRate(ethers.utils.parseUnits('0.1', 8))).to.be.revertedWith("ERC20WithFees: fee change delay not passed")
+			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
+			expect(feeLastChangedAfter).to.equal(feeLastChanged)
+		})
+
+		it("Set new fee rate", async () => {
+			const { ERC20WithFees, deployer } = await setup()
+
+			let delay = await ERC20WithFees.feeChangeMinDelay()
+
+			let latestBlockTime = await time.latest()
+			let travelTo = BigNumber.from(latestBlockTime).add(delay)
+
+			await time.increaseTo(travelTo)
+
+			await expect(deployer.ERC20WithFees.setFeeRate(ethers.utils.parseUnits('0.1', 8))).to.not.be.reverted
+			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
+			expect(feeLastChangedAfter).to.equal(travelTo.add(1))
+
+		})
+
+		it("forgets outstanding debt with old fee rate", async () => {
+			const { ERC20WithFees, deployer, users, decimals } = await setup()
+
+			const user = users[0]
+			await fundFromDeployer(ERC20WithFees, user.address, ethers.utils.parseUnits('1', decimals))
+
+			await timeJumpForward(month)
+
+			let balancBefore = await ERC20WithFees.callStatic.balanceOf(user.address)
+			let balanceWithFeeBefore = await ERC20WithFees.callStatic.balanceOfWithFee(user.address)
+
+			expect(balancBefore).to.not.be.equal(balanceWithFeeBefore)
+
+			let delay = await ERC20WithFees.feeChangeMinDelay()
+			let latestBlockTime = await time.latest()
+			let travelTo = BigNumber.from(latestBlockTime).add(delay)
+
+			await time.increaseTo(travelTo)
+
+			await expect(deployer.ERC20WithFees.setFeeRate(ethers.utils.parseUnits('0.1', 8))).to.not.be.reverted
+			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
+			expect(feeLastChangedAfter).to.equal(travelTo.add(1))
+
+			let balanceAfter = await ERC20WithFees.callStatic.balanceOf(user.address)
+			let balanceWithFeeAfter = await ERC20WithFees.callStatic.balanceOfWithFee(user.address)
+
+			expect(balanceAfter).to.equal(balanceWithFeeAfter)
+		})
+	})
+
+	describe("Oracle", () => {
+		it("initially set as zero address", async () => {
+			const { ERC20WithFees } = await setup()
+
+			const oracle = await ERC20WithFees.oracle()
+			expect(oracle).to.equal(ethers.constants.AddressZero)
+		})
+
+		it("cannot be zero address", async () => {
+			const { ERC20WithFees } = await setup()
+			await expect(ERC20WithFees.setOracleAddress(ethers.constants.AddressZero)).to.be.revertedWith("ERC20WithFees: oracle address cannot be zero")
+		})
+
+		it("only owner", async () => {
+			const { users } = await setup()
+
+			const user = users[0]
+
+			await expect(user.ERC20WithFees.setOracleAddress(user.address)).to.be.revertedWith("Ownable: caller is not the owner")
+		})
+
+		it("can be changed", async () => {
+			const { ERC20WithFees, users } = await setup()
+
+			const user = users[0]
+
+			await expect(ERC20WithFees.setOracleAddress(user.address)).to.emit(ERC20WithFees, "OracleAddressChanged").withArgs(user.address)
+		})
+
+		it("limits token minting if set", async () => {
+			const { ERC20WithFees, Oracle } = await setup()
+
+			await ERC20WithFees.setOracleAddress(Oracle.address)
+
+			const max = await Oracle.lockedValue()
+
+			await (expect(ERC20WithFees.mint(max.add(1))).to.be.revertedWith("ERC20WithFees: new total supply amount would exceed reserve balance"));
+		})
+	})
+})
