@@ -473,7 +473,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
         emit FeeChanged(feeRate);
     }
 
-    function collectFees(address[] memory accounts) public {
+    function collectFees(address[] calldata accounts) public {
         for (uint256 i = 0; i < accounts.length; i++) {
             _payFee(accounts[i]);
         }
