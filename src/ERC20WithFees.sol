@@ -69,6 +69,15 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
             feeRate_ <= maxFee_,
             "ERC20WithFees: fee rate cannot be greater than 10%"
         );
+        require(
+            feeCollectionTreasury_ != address(0),
+            "ERC20WithFees: fee collection address cannot be the zero address"
+        );
+        require(
+            minter_ != address(0),
+            "ERC20WithFees: minter address cannot be the zero address"
+        );
+
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
