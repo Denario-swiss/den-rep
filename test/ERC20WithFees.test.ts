@@ -62,6 +62,20 @@ const setup = deployments.createFixture(async () => {
 
 describe('StakingRewards', () => {
 	describe('Fee last paid', () => {
+		it("requires amount > 0", async () => {
+			const { ERC20WithFees, users, decimals } = await setup()
+			let sender = users[0]
+			let receiver = users[1]
+
+			const amount = ethers.utils.parseUnits('0', decimals)
+
+			await expect(sender.ERC20WithFees.transfer(receiver.address, amount)).to.be.revertedWith("ERC20: transfer amount must be greater than 0")
+			let feeLastPaid = await ERC20WithFees.feeLastPaid(receiver.address)
+			expect(feeLastPaid).to.equal(BigNumber.from(0))
+
+
+		})
+
 		it('initialised after receiving tokens', async () => {
 			const { ERC20WithFees, deployer, users, decimals } = await setup()
 

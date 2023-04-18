@@ -255,6 +255,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
     ) internal virtual {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
+        require(amount > 0, "ERC20: transfer amount must be greater than 0");
 
         _payFee(from);
         require(
