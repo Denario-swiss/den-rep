@@ -21,7 +21,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
     uint256 private _totalSupply;
     string public override name;
     string public override symbol;
-    uint8 public override decimals;
+    uint8 public immutable override decimals;
 
     // address of the proof of reserves oracle which provides the real world locked amount
     address public oracle;
