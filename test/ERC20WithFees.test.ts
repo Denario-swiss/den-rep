@@ -61,7 +61,89 @@ const setup = deployments.createFixture(async () => {
 })
 
 describe('StakingRewards', () => {
+
+	describe("Transfer", () => {
+		it("always possible to transfer all tokens", async () => {
+			const { ERC20WithFees, deployer, users, decimals } = await setup()
+			let sender = users[0]
+			let receiver = users[1]
+
+
+			const amount = ethers.utils.parseUnits('100', decimals)
+			await fundFromDeployer(deployer.ERC20WithFees, sender.address, amount)
+
+			await timeJumpForward(365 * 24 * 60 * 60)
+
+			let balanceBefore = await ERC20WithFees.callStatic.balanceOf(sender.address)
+
+			await sender.ERC20WithFees.transferAll(receiver.address)
+
+			let balance = await ERC20WithFees.callStatic.balanceOf(sender.address)
+			let balanceAndFee = await ERC20WithFees.callStatic.balanceOfWithFee(sender.address)
+			let fee = balanceAndFee.sub(balance)
+
+			expect(balance).to.equal(BigNumber.from(0))
+			expect(fee).to.equal(BigNumber.from(0))
+
+
+			let receiverBalance = await ERC20WithFees.callStatic.balanceOf(receiver.address)
+			let receiverBalanceAndFee = await ERC20WithFees.callStatic.balanceOfWithFee(receiver.address)
+			let receiverFee = balanceAndFee.sub(balance)
+
+			expect(receiverBalance.toNumber()).to.be.closeTo(balanceBefore.toNumber(), 10)
+
+			expect(receiverFee).to.equal(BigNumber.from(0))
+
+
+		})
+		it("always possible to transfer all tokens: dust", async () => {
+			const { ERC20WithFees, deployer, users, decimals } = await setup()
+			let sender = users[0]
+			let receiver = users[1]
+
+
+			const amount = BigNumber.from(1)
+			await fundFromDeployer(deployer.ERC20WithFees, sender.address, amount)
+
+			await timeJumpForward(365 * 24 * 60 * 60)
+
+			let balanceBefore = await ERC20WithFees.callStatic.balanceOf(sender.address)
+
+			await sender.ERC20WithFees.transferAll(receiver.address)
+
+			let balance = await ERC20WithFees.callStatic.balanceOf(sender.address)
+			let balanceAndFee = await ERC20WithFees.callStatic.balanceOfWithFee(sender.address)
+			let fee = balanceAndFee.sub(balance)
+
+			expect(balance).to.equal(BigNumber.from(0))
+			expect(fee).to.equal(BigNumber.from(0))
+
+
+			let receiverBalance = await ERC20WithFees.callStatic.balanceOf(receiver.address)
+			let receiverFee = balanceAndFee.sub(balance)
+
+			expect(receiverBalance.toNumber()).to.be.closeTo(balanceBefore.toNumber(), 10)
+			expect(receiverFee).to.equal(BigNumber.from(0))
+
+
+		})
+	})
+
 	describe('Fee last paid', () => {
+		it("requires amount > 0", async () => {
+			const { ERC20WithFees, users, decimals } = await setup()
+			let sender = users[0]
+			let receiver = users[1]
+
+			const amount = ethers.utils.parseUnits('0', decimals)
+
+			await expect(sender.ERC20WithFees.transfer(receiver.address, amount)).to.be.revertedWith("ERC20: transfer amount must be greater than 0")
+			let feeLastPaid = await ERC20WithFees.feeLastPaid(receiver.address)
+			expect(feeLastPaid).to.equal(BigNumber.from(0))
+
+
+		})
+
 		it('initialised after receiving tokens', async () => {
 			const { ERC20WithFees, deployer, users, decimals } = await setup()
 
@@ -260,8 +342,6 @@ describe('StakingRewards', () => {
 	describe("Fee exemption", () => {
 		it("exempt addresses do not pay fees", async () => {
 			const { ERC20WithFees, feeCollector, decimals } = await setup()
-
-			await fundFromDeployer(ERC20WithFees, feeCollector.address, ethers.utils.parseUnits('100', decimals))
 
 			const balanceBefore = await ERC20WithFees.balanceOf(feeCollector.address)
 			const balanceWithFeeBefore = await ERC20WithFees.balanceOfWithFee(feeCollector.address)

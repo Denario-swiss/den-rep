@@ -21,7 +21,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
     uint256 private _totalSupply;
     string public override name;
     string public override symbol;
-    uint8 public override decimals;
+    uint8 public immutable override decimals;
 
     // address of the proof of reserves oracle which provides the real world locked amount
     address public oracle;
@@ -69,6 +69,15 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
             feeRate_ <= maxFee_,
             "ERC20WithFees: fee rate cannot be greater than 10%"
         );
+        require(
+            feeCollectionTreasury_ != address(0),
+            "ERC20WithFees: fee collection address cannot be the zero address"
+        );
+        require(
+            minter_ != address(0),
+            "ERC20WithFees: minter address cannot be the zero address"
+        );
+
         name = name_;
         symbol = symbol_;
         decimals = decimals_;
@@ -255,6 +264,9 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
     ) internal virtual {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
+        require(amount > 0, "ERC20: transfer amount must be greater than 0");
+        require(from != to, "ERC20: self transfer is not allowed");
+
 
         _payFee(from);
         require(
@@ -473,7 +485,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
         emit FeeChanged(feeRate);
     }
 
-    function collectFees(address[] memory accounts) public {
+    function collectFees(address[] calldata accounts) public {
         for (uint256 i = 0; i < accounts.length; i++) {
             _payFee(accounts[i]);
         }
