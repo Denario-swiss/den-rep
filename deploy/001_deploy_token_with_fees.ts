@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { config } from 'dotenv';
 import { BigNumber } from 'ethers';
+import { ERC20WithFees } from '../typechain-types';
 config()
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -81,6 +82,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 			`ERC20WithFees deployed at ${deployResult.address}`
 		);
 	}
+
+	if (process.env.DEPLOY_DATA_NEW_OWNER) {
+		const erc20 = <ERC20WithFees>await ethers.getContract('ERC20WithFees')
+		const signer = await ethers.getSigner(deployer);
+
+		let tx = await erc20.connect(signer).transferOwnership(process.env.DEPLOY_DATA_NEW_OWNER)
+		console.log(
+			`Transferring ownership to ${process.env.DEPLOY_DATA_NEW_OWNER}, tx: ${tx.hash}....`
+		);
+		await tx.wait()
+
+		console.log("New owner proposed, needs to be accepted.")
+	}
+
+
 
 };
 
