@@ -67,7 +67,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
     ) Ownable2Step() {
         require(
             feeRate_ <= maxFee_,
-            "ERC20WithFees: fee rate cannot be greater than 10%"
+            "ERC20WithFees: fee cannot be more than max fee"
         );
         require(
             feeCollectionTreasury_ != address(0),
@@ -266,7 +266,6 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "ERC20: transfer amount must be greater than 0");
         require(from != to, "ERC20: self transfer is not allowed");
-
 
         _payFee(from);
         require(
