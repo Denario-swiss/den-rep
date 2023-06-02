@@ -9,8 +9,6 @@ import "./openzeppelin-contracts/access/Ownable2Step.sol";
 import "./openzeppelin-contracts/utils/math/Math.sol";
 import "./IProofOfReserveOracle.sol";
 
-import "hardhat/console.sol";
-
 contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
     event FeeChanged(uint256 newFee);
     event OracleAddressChanged(address oracle);

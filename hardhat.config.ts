@@ -41,6 +41,11 @@ const config: HardhatUserConfig = {
 		},
 
 	},
+	verify: {
+		etherscan: {
+			apiKey: process.env.POLYGONSCAN_API_KEY,
+		}
+	},
 	paths: {
 		sources: 'src',
 	},
