@@ -68,7 +68,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 
 
-
 	const deployResult = await deploy('ERC20WithFees', {
 		from: deployer,
 		args: args,

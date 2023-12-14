@@ -45,6 +45,8 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
      * _feeExempt addresses are not subject to fees
      */
     uint256 public feeRate;
+    uint256 private maxFeeDuration;
+
     uint256 public lastFeeChange;
 
     uint256 public immutable maxFee;
@@ -62,6 +64,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
         address feeCollectionTreasury_,
         address minter_
     ) Ownable2Step() {
+        require(maxFee_ <= 10 ** decimals_, "ERC20WithFees: max fee too high");
         require(
             feeRate_ <= maxFee_,
             "ERC20WithFees: fee cannot be more than max fee"
@@ -80,6 +83,8 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
         decimals = decimals_;
 
         feeRate = feeRate_;
+        maxFeeDuration = Math.mulDiv(10 ** decimals_, 365 days, feeRate_);
+
         lastFeeChange = block.timestamp;
         feePrecision = 365 days * 10 ** decimals_;
         maxFee = maxFee_;
@@ -105,6 +110,9 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
      */
     function balanceOf(address account) public view override returns (uint256) {
         uint256 fee = _calculateFee(account);
+        if (_balances[account] < fee) {
+            return 0;
+        }
         return _balances[account] - fee;
     }
 
@@ -450,6 +458,11 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
             : lastFeeChange;
 
         uint256 elapsed = block.timestamp - lastPaid;
+
+        if (elapsed >= maxFeeDuration) {
+            return _balances[account];
+        }
+
         return Math.mulDiv(elapsed * feeRate, _balances[account], feePrecision);
     }
 
@@ -477,6 +490,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
 
         lastFeeChange = block.timestamp;
         feeRate = newFee_;
+        maxFeeDuration = Math.mulDiv(10 ** decimals, 365 days, feeRate);
 
         emit FeeChanged(feeRate);
     }

@@ -4,6 +4,7 @@ import { expect, assert } from './chai-setup'
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
 import { ERC20WithFees, MockOracle } from '../typechain-types'
+import exp from 'constants'
 
 
 const SUPPLY = ethers.utils.parseUnits('1000000', 8)
@@ -49,6 +50,8 @@ const setup = deployments.createFixture(async () => {
 
 	const namedUser = await setupUser(deployer, contracts)
 
+	const feeRate = await contracts.ERC20WithFees.feeRate()
+
 	return {
 		...contracts,
 		decimals: decimals,
@@ -56,11 +59,60 @@ const setup = deployments.createFixture(async () => {
 		deployer: namedUser,
 		feeCollector: namedUser,
 		minter: namedUser,
-
+		feeRate: feeRate
 	}
 })
 
-describe('StakingRewards', () => {
+describe('Erc20WithFees', () => {
+	describe("Balance", () => {
+		it("shows correct balance", async () => {
+			const { ERC20WithFees, deployer, users, decimals, feeRate } = await setup()
+
+			const user = users[6]
+
+			const amount = ethers.utils.parseUnits('1', decimals)
+			await fundFromDeployer(ERC20WithFees, user.address, amount)
+
+			const balanceBefore = await ERC20WithFees.balanceOf(user.address)
+			const balanceBeforeWithFees = await ERC20WithFees.balanceOfWithFee(user.address)
+
+			expect(balanceBefore).to.equal(amount)
+			expect(balanceBeforeWithFees).to.equal(amount)
+
+
+
+			await timeJumpForward(365 * 24 * 60 * 60)
+
+			const balanceAfter = await ERC20WithFees.balanceOf(user.address)
+			const balanceWithFeesAfter = await ERC20WithFees.balanceOfWithFee(user.address)
+
+
+			let expectedFee = amount.mul(feeRate).div(10 ** decimals)
+
+
+			expect(balanceAfter).to.equal(amount.sub(expectedFee))
+			expect(balanceWithFeesAfter).to.equal(amount)
+
+		})
+
+		it("shows correct balance: dust", async () => {
+			const { ERC20WithFees, deployer, users, decimals } = await setup()
+			const user = users[6]
+
+			const amount = ethers.utils.parseUnits('0.00000001', decimals)
+			await fundFromDeployer(ERC20WithFees, user.address, amount)
+
+			await timeJumpForward(101 * 365 * 24 * 60 * 60)
+
+			const balance = await ERC20WithFees.balanceOf(user.address)
+			const balanceWithFees = await ERC20WithFees.balanceOfWithFee(user.address)
+
+			expect(balance).to.equal(0)
+			expect(balanceWithFees).to.equal(amount)
+
+
+		})
+	})
 
 	describe("Transfer", () => {
 		it("always possible to transfer all tokens", async () => {
@@ -87,7 +139,6 @@ describe('StakingRewards', () => {
 
 
 			let receiverBalance = await ERC20WithFees.callStatic.balanceOf(receiver.address)
-			let receiverBalanceAndFee = await ERC20WithFees.callStatic.balanceOfWithFee(receiver.address)
 			let receiverFee = balanceAndFee.sub(balance)
 
 			expect(receiverBalance.toNumber()).to.be.closeTo(balanceBefore.toNumber(), 10)
@@ -186,8 +237,6 @@ describe('StakingRewards', () => {
 		})
 	})
 
-
-
 	describe('Fee collection', () => {
 		it('trigger fee deduction', async () => {
 			const { ERC20WithFees, minter, feeCollector, users, decimals } = await setup()
@@ -202,6 +251,35 @@ describe('StakingRewards', () => {
 
 			await expect(user.ERC20WithFees.collectFees([user.address])).to
 				.emit(ERC20WithFees, 'Transfer').withArgs(user.address, feeCollector.address, fee)
+		})
+		it('collects 100% fees', async () => {
+			const { ERC20WithFees, minter, feeCollector, users, decimals, feeRate } = await setup()
+
+			let necessaryTime = BigNumber.from(10 ** decimals).div(feeRate).mul(365 * 24 * 60 * 60).add(1)
+
+			const user = users[0]
+			const amount = ethers.utils.parseUnits('100', decimals)
+
+			await fundFromDeployer(minter.ERC20WithFees, user.address, amount)
+
+			await timeJumpForward(necessaryTime.toNumber())
+
+			const balance = await ERC20WithFees.balanceOf(user.address)
+			const balanceWithFee = await ERC20WithFees.balanceOfWithFee(user.address)
+
+			expect(balanceWithFee).to.equal(amount)
+			expect(balance).to.equal(0)
+
+
+			await expect(user.ERC20WithFees.collectFees([user.address])).to
+				.emit(ERC20WithFees, 'Transfer').withArgs(user.address, feeCollector.address, amount)
+
+			const balanceAfterCollection = await ERC20WithFees.balanceOf(user.address)
+			const balanceWithFeeAdterCollection = await ERC20WithFees.balanceOfWithFee(user.address)
+
+			expect(balanceAfterCollection).to.equal(0)
+			expect(balanceWithFeeAdterCollection).to.equal(0)
+
 		})
 	})
 
