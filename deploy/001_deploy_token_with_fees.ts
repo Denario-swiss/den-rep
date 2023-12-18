@@ -45,7 +45,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 			process.env.DEPLOY_DATA_DECIMALS,
 			process.env.DEPLOY_DATA_FEE_RATE,
 			process.env.DEPLOY_DATA_MAX_FEE_RATE,
-			BigNumber.from(process.env.DEPLOY_DATA_MAX_DELAY_FEE_CHANGE),
+			process.env.DEPLOY_DATA_MAX_DELAY_FEE_CHANGE,
 			process.env.DEPLOY_DATA_FEE_COLLECTION_TREASURY_ADDRESS,
 			process.env.DEPLOY_DATA_MINTER_ADDRESS,
 		]
@@ -57,9 +57,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 			"Test Inflation Token",
 			"TIT",
 			decimals,
-			ethers.utils.parseUnits("0.01", decimals),
-			ethers.utils.parseUnits("0.1", decimals),
-			BigNumber.from(365 * 24 * 60 * 60),
+			1000000,
+			5000000,
+			365 * 24 * 60 * 60 / 2,
 			deployer,
 			deployer,
 		]

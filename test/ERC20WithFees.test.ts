@@ -505,9 +505,9 @@ describe('Erc20WithFees', () => {
 		it("Cannot be more than max", async () => {
 			const { ERC20WithFees, users, deployer } = await setup()
 
-			let newRate = ethers.utils.parseUnits('0.1', 8).add(1)
+			let max = await ERC20WithFees.maxFee()
 			let feeLastChanged = await ERC20WithFees.lastFeeChange()
-			await expect(ERC20WithFees.setFeeRate(newRate)).to.be.revertedWith("ERC20WithFees: fee cannot be more than max fee")
+			await expect(ERC20WithFees.setFeeRate(max.add(1))).to.be.revertedWith("ERC20WithFees: fee cannot be more than max fee")
 			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(feeLastChanged)
 		})
@@ -515,8 +515,12 @@ describe('Erc20WithFees', () => {
 		it("delay ", async () => {
 			const { ERC20WithFees, users, deployer } = await setup()
 
+			const fee = await ERC20WithFees.feeRate()
+
 			let feeLastChanged = await ERC20WithFees.lastFeeChange()
-			await expect(deployer.ERC20WithFees.setFeeRate(ethers.utils.parseUnits('0.1', 8))).to.be.revertedWith("ERC20WithFees: fee change delay not passed")
+
+			await expect(deployer.ERC20WithFees.setFeeRate(fee.add(1))).to.be.revertedWith("ERC20WithFees: fee change delay not passed")
+
 			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(feeLastChanged)
 		})
@@ -526,12 +530,14 @@ describe('Erc20WithFees', () => {
 
 			let delay = await ERC20WithFees.feeChangeMinDelay()
 
+			const fee = await ERC20WithFees.feeRate()
+
 			let latestBlockTime = await time.latest()
 			let travelTo = BigNumber.from(latestBlockTime).add(delay)
 
 			await time.increaseTo(travelTo)
 
-			await expect(deployer.ERC20WithFees.setFeeRate(ethers.utils.parseUnits('0.1', 8))).to.not.be.reverted
+			await expect(deployer.ERC20WithFees.setFeeRate(fee.add(1))).to.not.be.reverted
 			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(travelTo.add(1))
 
@@ -556,7 +562,9 @@ describe('Erc20WithFees', () => {
 
 			await time.increaseTo(travelTo)
 
-			await expect(deployer.ERC20WithFees.setFeeRate(ethers.utils.parseUnits('0.1', 8))).to.not.be.reverted
+			const fee = await ERC20WithFees.feeRate()
+
+			await expect(deployer.ERC20WithFees.setFeeRate(fee.add(1))).to.not.be.reverted
 			let feeLastChangedAfter = await ERC20WithFees.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(travelTo.add(1))
 
