@@ -3,7 +3,6 @@
 ## INSTALLATION
 
 ```bash
-```bash
 npm i
 ```
 
@@ -11,7 +10,9 @@ npm i
 
 Run tests:
 
-```bash npm run test ```
+```bash 
+npm run test 
+```
 
 ## SCRIPTS
 

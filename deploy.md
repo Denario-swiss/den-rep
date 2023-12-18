@@ -10,8 +10,8 @@ The available networks are in the [hardhat.config.ts](hardhat.config.ts) file.
 | DEPLOY_DATA_NAME                            | Denario                                   | token name                                                                                |
 | DEPLOY_DATA_SYMBOL                          | DT                                        | token symbol                                                                              |
 | DEPLOY_DATA_DECIMALS                        | 8                                         | token decimals                                                                            |
-| DEPLOY_DATA_FEE_RATE                        | 0.01                                      | fee percentage owed after 1 year, (100% = 1)                                              |
-| DEPLOY_DATA_MAX_FEE_RATE                    | 0.1                                       | fee rate is changeable, but cannot be greater than max fee rate                           |
+| DEPLOY_DATA_FEE_RATE                        | 1000000                               | fee percentage owed after 1 year, (100% = 100000000 = 1 with `decimals precision`)                                              |
+| DEPLOY_DATA_MAX_FEE_RATE                    | 5000000                                      | fee rate is changeable, but cannot be greater than max fee rate                           |
 | DEPLOY_DATA_MAX_DELAY_FEE_CHANGE            | 31536000                                  | minimal time interval between two fee changes in seconds ( 365 * 24 * 60 * 6     )        |
 | DEPLOY_DATA_FEE_COLLECTION_TREASURY_ADDRESS | 0x000000000000000000000000000000000000000 | address where collected fees are sent, fee exempt by default                              |
 | DEPLOY_DATA_MINTER_ADDRESS                  | 0x000000000000000000000000000000000000000 | address, who has minter role, he can mint and burn existing tokens, fee exempt by default |
