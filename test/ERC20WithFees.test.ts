@@ -417,24 +417,6 @@ describe('Erc20WithFees', () => {
 		})
 	})
 
-	describe("Fee exemption", () => {
-		it("exempt addresses do not pay fees", async () => {
-			const { ERC20WithFees, feeCollector, decimals } = await setup()
-
-			const balanceBefore = await ERC20WithFees.balanceOf(feeCollector.address)
-			const balanceWithFeeBefore = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
-
-			expect(balanceBefore).to.equal(balanceWithFeeBefore)
-
-			await timeJumpForward(month * 1000)
-
-			const balanceAfter = await ERC20WithFees.balanceOf(feeCollector.address)
-			const balanceWithFeeAfter = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
-
-			expect(balanceAfter).to.equal(balanceWithFeeAfter)
-
-		})
-	})
 
 
 	describe("set new fee collection address", () => {
@@ -613,5 +595,55 @@ describe('Erc20WithFees', () => {
 
 			await (expect(ERC20WithFees.mint(max.add(1))).to.be.revertedWith("ERC20WithFees: new total supply amount would exceed reserve balance"));
 		})
+	})
+
+
+	describe("Whitelist addresses", () => {
+		it("non owner reverts", async () => {
+			const { ERC20WithFees, users } = await setup()
+
+			const user = users[1]
+
+			await expect(user.ERC20WithFees.setFeeExempt(user.address)).to.be.revertedWith("Ownable: caller is not the owner")
+
+			await expect(user.ERC20WithFees.unsetFeeExempt(user.address)).to.be.revertedWith("Ownable: caller is not the owner")
+		})
+
+		it("owner can whitelist", async () => {
+			const { ERC20WithFees, users } = await setup()
+
+			const user = users[1]
+
+			let isExempt = await ERC20WithFees.feeExempt(user.address)
+			assert.equal(isExempt, false)
+
+			await expect(ERC20WithFees.setFeeExempt(user.address)).to.not.be.reverted
+
+			isExempt = await ERC20WithFees.feeExempt(user.address)
+			assert.equal(isExempt, true)
+
+			await expect(ERC20WithFees.unsetFeeExempt(user.address)).to.not.be.reverted
+
+			isExempt = await ERC20WithFees.feeExempt(user.address)
+			assert.equal(isExempt, false)
+		})
+		
+		it("exempt addresses do not pay fees", async () => {
+			const { ERC20WithFees, feeCollector, decimals } = await setup()
+
+			const balanceBefore = await ERC20WithFees.balanceOf(feeCollector.address)
+			const balanceWithFeeBefore = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
+
+			expect(balanceBefore).to.equal(balanceWithFeeBefore)
+
+			await timeJumpForward(month * 1000)
+
+			const balanceAfter = await ERC20WithFees.balanceOf(feeCollector.address)
+			const balanceWithFeeAfter = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
+
+			expect(balanceAfter).to.equal(balanceWithFeeAfter)
+
+		})
+
 	})
 })

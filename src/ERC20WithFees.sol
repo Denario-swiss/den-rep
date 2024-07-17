@@ -27,7 +27,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
     mapping(address => uint256) private _feeLastPaid;
 
     // Addresses not subject to transfer fees
-    mapping(address => bool) private _feeExempt;
+    mapping(address => bool) public feeExempt;
 
     // Address where fees are collected
     address private _feeCollectionAddress;
@@ -42,7 +42,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
      * expressed as how many tokens are collected from 1 token for each year
      *
      * @dev fees are sent to the feeCollectionAddress, collection happens at every transfer or by calling the collectFees function
-     * _feeExempt addresses are not subject to fees
+     * feeExempt addresses are not subject to fees
      */
     uint256 public feeRate;
     uint256 private maxFeeDuration;
@@ -450,7 +450,7 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
      * for the period between the last fee deduction for the account and the last fee change in the contract is not included in fee calculation
      */
     function _calculateFee(address account) internal view returns (uint256) {
-        if (_balances[account] == 0 || _feeExempt[account]) {
+        if (_balances[account] == 0 || feeExempt[account]) {
             return 0;
         }
         uint256 lastPaid = _feeLastPaid[account] > lastFeeChange
@@ -506,16 +506,16 @@ contract ERC20WithFees is Context, IERC20, IERC20Metadata, Ownable2Step {
      * in special circumstance for cold storage addresses owed by Cache, exchanges, etc.
      * @param account The account to exempt from storage fees
      */
-    function setFeeExempt(address account) internal onlyOwner {
-        _feeExempt[account] = true;
+    function setFeeExempt(address account) public onlyOwner {
+        feeExempt[account] = true;
     }
 
     /**
      * @dev Set account is no longer exempt from all fees
      * @param account The account to reactivate fees
      */
-    function unsetFeeExempt(address account) internal onlyOwner {
-        _feeExempt[account] = false;
+    function unsetFeeExempt(address account) public onlyOwner {
+        feeExempt[account] = false;
         _feeLastPaid[account] = block.timestamp;
     }
 
