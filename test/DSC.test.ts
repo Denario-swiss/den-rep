@@ -3,7 +3,7 @@ import { setupUsers, setupUser } from './utils'
 import { expect, assert } from './chai-setup'
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
-import { ERC20WithFees, MockOracle } from '../typechain-types'
+import { DSC, MockOracle } from '../typechain-types'
 import exp from 'constants'
 
 
@@ -11,7 +11,7 @@ const SUPPLY = ethers.utils.parseUnits('1000000', 8)
 const month = 30 * 24 * 60 * 60
 
 
-const fundFromDeployer = async (contract: ERC20WithFees, address: string, amount: BigNumberish) => {
+const fundFromDeployer = async (contract: DSC, address: string, amount: BigNumberish) => {
 	await contract.transfer(address, amount)
 }
 
@@ -24,12 +24,12 @@ const timeJumpForward = async (timestamp: number) => {
 
 const setup = deployments.createFixture(async () => {
 
-	await deployments.fixture(['ERC20WithFees', 'MockOracle'])
+	await deployments.fixture(['DSC', 'MockOracle'])
 
 
 
 	const contracts = {
-		ERC20WithFees: <ERC20WithFees>await ethers.getContract('ERC20WithFees'),
+		ERC20WithFees: <DSC>await ethers.getContract('DSC'),
 		Oracle: <MockOracle>await ethers.getContract('MockOracle'),
 	}
 
@@ -64,6 +64,20 @@ const setup = deployments.createFixture(async () => {
 })
 
 describe('Erc20WithFees', () => {
+	describe('Deployment', () => {
+		it('shown correct deployment data', async () => {
+			const { ERC20WithFees } = await setup()
+
+			const name = await ERC20WithFees.name()
+			const symbol = await ERC20WithFees.symbol()
+			const decimals = await ERC20WithFees.decimals()
+			const totalSupply = await ERC20WithFees.totalSupply()
+			
+
+
+		})
+
+	})
 	describe("Balance", () => {
 		it("shows correct balance", async () => {
 			const { ERC20WithFees, deployer, users, decimals, feeRate } = await setup()
