@@ -60,6 +60,7 @@ abstract contract ERC20WithFeesUpgradeable is
    * construction.
    */
   function __ERC20WithFees_init(
+    address initialOwner,
     string memory name_,
     string memory symbol_,
     uint8 decimals_,
@@ -70,6 +71,7 @@ abstract contract ERC20WithFeesUpgradeable is
     address minter_
   ) internal onlyInitializing {
     __ERC20WithFees_init_unchained(
+      initialOwner,
       name_,
       symbol_,
       decimals_,
@@ -82,6 +84,7 @@ abstract contract ERC20WithFeesUpgradeable is
   }
 
   function __ERC20WithFees_init_unchained(
+    address initialOwner,
     string memory name_,
     string memory symbol_,
     uint8 decimals_,
@@ -91,7 +94,7 @@ abstract contract ERC20WithFeesUpgradeable is
     address feeCollectionAddress_,
     address minter_
   ) internal onlyInitializing {
-    __Ownable_init();
+    __Ownable_init(initialOwner);
 
     ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
@@ -625,6 +628,21 @@ abstract contract ERC20WithFeesUpgradeable is
     $.oracle = oracleAddress;
     emit OracleAddressChanged(oracleAddress);
     return true;
+  }
+
+  function decimals() public view virtual override returns (uint8) {
+    ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
+    return $._decimals;
+  }
+
+  function name() public view virtual override returns (string memory) {
+    ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
+    return $._name;
+  }
+
+  function symbol() public view virtual override returns (string memory) {
+    ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
+    return $._symbol;
   }
 
   function feeRate() public view returns (uint256) {
