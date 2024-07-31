@@ -57,4 +57,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ['ERC20WithFees'];
+func.tags = ['DSC'];

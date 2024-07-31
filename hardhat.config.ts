@@ -39,11 +39,15 @@ const config: HardhatUserConfig = {
 			url: node_url('polygon'),
 			accounts: accounts('polygon'),
 		},
+		sepolia: {
+			url: node_url('sepolia'),
+			accounts: accounts('sepolia'),
+		}
 
 	},
 	verify: {
 		etherscan: {
-			apiKey: process.env.POLYGONSCAN_API_KEY,
+			apiKey: process.env.ETHERSCAN_API_KEY,
 		}
 	},
 	paths: {
