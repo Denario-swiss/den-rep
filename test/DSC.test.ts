@@ -3,7 +3,7 @@ import { setupUsers, setupUser } from './utils'
 import { expect, assert } from './chai-setup'
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
-import { DSC, MockOracle } from '../typechain-types'
+import { Proxy, DSC, DSCV2, MockOracle } from '../typechain-types'
 import exp from 'constants'
 
 
@@ -628,4 +628,91 @@ describe('Erc20WithFees', () => {
 			await (expect(ERC20WithFees.mint(max.add(1))).to.be.revertedWith("ERC20WithFees: new total supply amount would exceed reserve balance"));
 		})
 	})
+
+	describe("Whitelist addresses", () => {
+		it("non owner reverts", async () => {
+			const { users } = await setup()
+
+			const user = users[1]   
+
+			await expect(user.ERC20WithFees.setFeeExempt(user.address)).to.be.reverted;
+
+			await expect(user.ERC20WithFees.unsetFeeExempt(user.address)).to.be.reverted;
+		})
+
+		it("owner can whitelist", async () => {
+			const { ERC20WithFees, users } = await setup()
+
+			const user = users[1]
+
+			let isExempt = await ERC20WithFees.feeExempt(user.address)
+			assert.equal(isExempt, false)
+
+			await expect(ERC20WithFees.setFeeExempt(user.address)).to.not.be.reverted
+
+			isExempt = await ERC20WithFees.feeExempt(user.address)
+			assert.equal(isExempt, true)
+
+			await expect(ERC20WithFees.unsetFeeExempt(user.address)).to.not.be.reverted
+
+			isExempt = await ERC20WithFees.feeExempt(user.address)
+			assert.equal(isExempt, false)
+		})
+		
+		it("exempt addresses do not pay fees", async () => {
+			const { ERC20WithFees, feeCollector, decimals } = await setup()
+
+			const balanceBefore = await ERC20WithFees.balanceOf(feeCollector.address)
+			const balanceWithFeeBefore = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
+
+			expect(balanceBefore).to.equal(balanceWithFeeBefore)
+
+			await timeJumpForward(month * 1000)
+
+			const balanceAfter = await ERC20WithFees.balanceOf(feeCollector.address)
+			const balanceWithFeeAfter = await ERC20WithFees.balanceOfWithFee(feeCollector.address)
+
+			expect(balanceAfter).to.equal(balanceWithFeeAfter)
+
+		})
+
+	})
+
+    describe("Test Upgrade", () => {
+        let proxy: Proxy;
+        var DSCV2Address: string;
+        beforeEach(async () => {
+            const { deployer } = await setup()
+
+           // Deploy new implementation
+        const NewDSC = await ethers.getContractFactory("DSC");
+        const newDSC = await NewDSC.deploy();
+        await newDSC.deployed();
+
+        console.log("New DSCV2 deployed to:", newDSC.address);
+
+        DSCV2Address = newDSC.address;
+
+        })
+
+        it("Upgrade only by owner", async () => {
+            const { users } = await setup()
+
+            const user = users[0]
+
+            await expect(user.ERC20WithFees.upgradeTo(user.address)).to.be.reverted;
+        })
+        it("Upgrade to new contract", async () => {
+            const { ERC20WithFees, deployer } = await setup()
+
+            let owner = await ERC20WithFees.owner()
+            expect(owner).to.be.eq(deployer.address);
+
+            
+
+            await deployer.ERC20WithFees.upgradeTo(DSCV2Address)
+            
+            // console.log(res)
+        })   
+    })
 })

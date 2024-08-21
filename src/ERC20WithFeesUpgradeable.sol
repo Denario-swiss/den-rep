@@ -561,7 +561,7 @@ abstract contract ERC20WithFeesUpgradeable is
    * in special circumstance for cold storage addresses owed by Cache, exchanges, etc.
    * @param account The account to exempt from storage fees
    */
-  function setFeeExempt(address account) internal onlyOwner {
+  function setFeeExempt(address account) public onlyOwner {
     ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
     $._feeExempt[account] = true;
@@ -571,11 +571,21 @@ abstract contract ERC20WithFeesUpgradeable is
    * @dev Set account is no longer exempt from all fees
    * @param account The account to reactivate fees
    */
-  function unsetFeeExempt(address account) internal onlyOwner {
+  function unsetFeeExempt(address account) public onlyOwner {
     ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
     $._feeExempt[account] = false;
     $._feeLastPaid[account] = block.timestamp;
+  }
+
+  /**
+   * @dev Public view function to verify if an account is exempt from fees
+   * @param account The account to check
+   */
+  function feeExempt(address account) public view returns (bool) {
+    ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
+
+    return $._feeExempt[account];
   }
 
   /**
