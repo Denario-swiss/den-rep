@@ -3,7 +3,7 @@ import { setupUsers, setupUser } from './utils'
 import { expect, assert } from './chai-setup'
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
 import { time } from "@nomicfoundation/hardhat-network-helpers"
-import { Proxy, DSC, DSCV2, MockOracle } from '../typechain-types'
+import {  DSC, DSCV2, MockOracle } from '../typechain-types'
 import exp from 'constants'
 
 
@@ -678,41 +678,33 @@ describe('Erc20WithFees', () => {
 
 	})
 
-    describe("Test Upgrade", () => {
-        let proxy: Proxy;
-        var DSCV2Address: string;
-        beforeEach(async () => {
-            const { deployer } = await setup()
-
-           // Deploy new implementation
-        const NewDSC = await ethers.getContractFactory("DSC");
-        const newDSC = await NewDSC.deploy();
-        await newDSC.deployed();
-
-        console.log("New DSCV2 deployed to:", newDSC.address);
-
-        DSCV2Address = newDSC.address;
-
-        })
-
-        it("Upgrade only by owner", async () => {
-            const { users } = await setup()
-
-            const user = users[0]
-
-            await expect(user.ERC20WithFees.upgradeTo(user.address)).to.be.reverted;
-        })
-        it("Upgrade to new contract", async () => {
-            const { ERC20WithFees, deployer } = await setup()
-
-            let owner = await ERC20WithFees.owner()
-            expect(owner).to.be.eq(deployer.address);
-
-            
-
-            await deployer.ERC20WithFees.upgradeTo(DSCV2Address)
-            
-            // console.log(res)
-        })   
-    })
+	describe("DSC Upgrade", function () {
+		let DSC: any;
+		let DSCV2: any;
+		let deployer: string;
+		let DSCV2Address: string;
+	
+		beforeEach(async () => {
+			await deployments.fixture(['DSC']);
+			const { deployer: deployerAddress } = await getNamedAccounts();
+			deployer = deployerAddress;
+			DSC = await ethers.getContract('DSC', deployer);
+	
+			// Deploy new implementation
+			const DSCV2Factory = await ethers.getContractFactory("DSCV2");
+			DSCV2 = await DSCV2Factory.deploy();
+			await DSCV2.deployed();
+			DSCV2Address = DSCV2.address;
+		});
+	
+		
+		it("Upgrade to new contract", async () => {
+			const [owner] = await ethers.getSigners();
+	
+			// Upgrade to new implementation
+			await expect(DSC.connect(owner).upgradeTo(DSCV2Address)).to.not.be.reverted;		
+		});
+	});
 })
+
+

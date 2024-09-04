@@ -60,7 +60,6 @@ abstract contract ERC20WithFeesUpgradeable is
    * construction.
    */
   function __ERC20WithFees_init(
-    address initialOwner,
     string memory name_,
     string memory symbol_,
     uint8 decimals_,
@@ -71,7 +70,6 @@ abstract contract ERC20WithFeesUpgradeable is
     address minter_
   ) internal onlyInitializing {
     __ERC20WithFees_init_unchained(
-      initialOwner,
       name_,
       symbol_,
       decimals_,
@@ -84,7 +82,6 @@ abstract contract ERC20WithFeesUpgradeable is
   }
 
   function __ERC20WithFees_init_unchained(
-    address initialOwner,
     string memory name_,
     string memory symbol_,
     uint8 decimals_,
@@ -94,7 +91,7 @@ abstract contract ERC20WithFeesUpgradeable is
     address feeCollectionAddress_,
     address minter_
   ) internal onlyInitializing {
-    __Ownable_init(initialOwner);
+    __Ownable_init();
 
     ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
