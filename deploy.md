@@ -1,3 +1,7 @@
+# Denario Silver Coin
+
+## Deployment Instructions
+
 See required parameters in the [.env.example](.env.example) file.
 Create a `.env` file and set the required parameters.
 
