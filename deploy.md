@@ -3,10 +3,10 @@ Create a `.env` file and set the required parameters.
 
 The available networks are in the [hardhat.config.ts](hardhat.config.ts) file.
 
-| Parameter                | Example                                | Description                                             |
-| ------------------------ | -------------------------------------- | ------------------------------------------------------- |
-| ETH*NODE_URI*`<network>` | https://matic-mumbai.chainstacklabs.co | HTTPS RPC endpoint of the network                       |
-| KEYS\_`<network>`        | <private_key_in_plaintext>             | account from which the transactions are exevuted        |
+| Parameter                | Example                                | Description                                                              |
+| ------------------------ | -------------------------------------- | ------------------------------------------------------------------------ |
+| ETH*NODE_URI*`<network>` | https://matic-mumbai.chainstacklabs.co | HTTPS RPC endpoint of the network                                        |
+| KEYS\_`<network>`        | <private_key_in_plaintext>             | account from which the transactions are exevuted                         |
 | `<network>`\_API_KEY     | testapikey                             | API key for etherscan/polygonscan API key to verify deployed source code |
 
 After setting required parameters, run the following command to deploy the contract to the network:
@@ -14,7 +14,7 @@ After setting required parameters, run the following command to deploy the contr
 Deploy:
 
 ```bash
-npx hardhat deploy --tags ERC20WithFees --network <network>
+npx hardhat deploy --tags DSC --network <network>
 ```
 
 Verify deployed contract:

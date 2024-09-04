@@ -17,6 +17,6 @@ contract DSCV2 is ERC20WithFeesUpgradeable, UUPSUpgradeable {
   ) internal override onlyOwner {}
 
   function name() public pure override returns (string memory) {
-    return "Denario Silver Coin V2";
+    return "Denario Silver Coin";
   }
 }
