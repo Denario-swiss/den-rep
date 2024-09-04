@@ -1,12 +1,12 @@
-import 'dotenv/config';
-import { HardhatUserConfig } from 'hardhat/types';
-import 'hardhat-deploy';
-import '@nomiclabs/hardhat-ethers';
-import 'hardhat-gas-reporter';
-import '@typechain/hardhat';
-import 'solidity-coverage';
-import 'hardhat-deploy-tenderly';
-import { node_url, accounts } from './utils/network';
+import 'dotenv/config'
+import { HardhatUserConfig } from 'hardhat/types'
+import 'hardhat-deploy'
+import '@nomiclabs/hardhat-ethers'
+import 'hardhat-gas-reporter'
+import '@typechain/hardhat'
+import 'solidity-coverage'
+import 'hardhat-deploy-tenderly'
+import { node_url, accounts } from './utils/network'
 
 const config: HardhatUserConfig = {
 	solidity: {
@@ -29,7 +29,6 @@ const config: HardhatUserConfig = {
 	networks: {
 		hardhat: {
 			initialBaseFeePerGas: 0, // to fix : https://github.com/sc-forks/solidity-coverage/issues/652, see https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136
-
 		},
 		mumbai: {
 			url: node_url('mumbai'),
@@ -42,13 +41,12 @@ const config: HardhatUserConfig = {
 		sepolia: {
 			url: node_url('sepolia'),
 			accounts: accounts('sepolia'),
-		}
-
+		},
 	},
 	verify: {
 		etherscan: {
 			apiKey: process.env.ETHERSCAN_API_KEY,
-		}
+		},
 	},
 	paths: {
 		sources: 'src',
@@ -62,7 +60,7 @@ const config: HardhatUserConfig = {
 	},
 	mocha: {
 		timeout: 20000,
-	}
-};
+	},
+}
 
-export default config;
+export default config
