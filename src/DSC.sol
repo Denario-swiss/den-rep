@@ -3,7 +3,6 @@
 pragma solidity ^0.8.20;
 
 import './ERC20WithFeesUpgradeable.sol';
-import 'hardhat-deploy/solc_0.8/proxy/Proxied.sol';
 
 import { UUPSUpgradeable } from '@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol';
 
