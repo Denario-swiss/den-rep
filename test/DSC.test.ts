@@ -1,20 +1,24 @@
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
 import {
-  loadFixture,
-  time,
-} from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { expect } from "chai";
-import { ethers, ignition } from "hardhat";
-import DSCModule from "../ignition/modules/ProxyModule";
-import OracleModule from "../ignition/modules/OracleModule";
-import {Proxy, DSC, DSC__factory, MockOracle, MockOracle__factory } from '../typechain-types';
-import { BigNumberish, ZeroAddress } from "ethers";
-
+	loadFixture,
+	time,
+} from '@nomicfoundation/hardhat-toolbox/network-helpers'
+import { expect } from 'chai'
+import { ethers, ignition } from 'hardhat'
+import DSCModule from '../ignition/modules/ProxyModule'
+import OracleModule from '../ignition/modules/OracleModule'
+import {
+	Proxy,
+	DSC,
+	DSC__factory,
+	MockOracle,
+	MockOracle__factory,
+} from '../typechain-types'
+import { BigNumberish, ZeroAddress } from 'ethers'
 
 const SUPPLY = ethers.parseUnits('1000000', 8)
 const MONTH = 30 * 24 * 60 * 60
 const YEAR = 365 * 24 * 60 * 60
-
 
 const fundFromDeployer = async (
 	contract: DSC,
@@ -27,37 +31,36 @@ const fundFromDeployer = async (
 const timeJumpForward = async (timestamp: BigNumberish) => {
 	const latestBlockTime = await time.latest()
 
-	const travelTo = BigInt(latestBlockTime)+ BigInt(timestamp)
+	const travelTo = BigInt(latestBlockTime) + BigInt(timestamp)
 	await time.increaseTo(travelTo)
 }
 
 const setup = async () => {
-	const [owner, ...users] = await ethers.getSigners();
+	const [owner, ...users] = await ethers.getSigners()
 
 	const { instance, proxy } = await ignition.deploy(DSCModule, {
 		parameters: {
-			DSCModule: {
-		  },
+			DSCModule: {},
 		},
-	  });
+	})
 
-	const {oracle} = await ignition.deploy(OracleModule, {
+	const { oracle } = await ignition.deploy(OracleModule, {
 		parameters: {
-			OracleModule: {
-		  },
+			OracleModule: {},
 		},
-	  });
+	})
 
-
-	const dsc: DSC = DSC__factory.connect(await instance.getAddress(), owner);
+	const dsc: DSC = DSC__factory.connect(await instance.getAddress(), owner)
 
 	const feeRate = await dsc.feeRate()
 	const decimals = await dsc.decimals()
 
 	await dsc.mint(SUPPLY)
 
-	const oracleInstance: MockOracle = MockOracle__factory.connect(await oracle.getAddress(), owner);
-
+	const oracleInstance: MockOracle = MockOracle__factory.connect(
+		await oracle.getAddress(),
+		owner,
+	)
 
 	return {
 		DSC: dsc,
@@ -82,7 +85,7 @@ describe('DSC', () => {
 			const symbol = await instance.symbol()
 			const decimals = await instance.decimals()
 			const totalSupply = await instance.totalSupply()
-		
+
 			expect(name).to.equal('Denario Silver Coin')
 			expect(symbol).to.equal('DSC')
 			expect(decimals).to.equal(8)
@@ -93,16 +96,13 @@ describe('DSC', () => {
 		it('shows correct balance', async () => {
 			const { DSC, users, decimals, feeRate } = await setup()
 
-
 			const user = users[1]
 
 			const amount = ethers.parseUnits('1', decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
 			let balanceBefore = await DSC.balanceOf(user.address)
-			let balanceBeforeWithFees = await DSC.balanceOfWithFee(
-				user.address,
-			)
+			let balanceBeforeWithFees = await DSC.balanceOfWithFee(user.address)
 
 			expect(balanceBefore).to.equal(amount)
 			expect(balanceBeforeWithFees).to.equal(amount)
@@ -112,16 +112,16 @@ describe('DSC', () => {
 			await timeJumpForward(YEAR)
 
 			const balanceAfter = await DSC.balanceOf(user.address)
-			const balanceWithFeesAfter = await DSC.balanceOfWithFee(user.address)
+			const balanceWithFeesAfter = await DSC.balanceOfWithFee(
+				user.address,
+			)
 
-
-			let expectedFee = BigInt(amount) * BigInt(feeRate) / BigInt(10 ** Number(decimals))
-
-		
+			let expectedFee =
+				(BigInt(amount) * BigInt(feeRate)) /
+				BigInt(10 ** Number(decimals))
 
 			expect(balanceAfter).to.equal(balanceBefore - expectedFee)
 			expect(balanceWithFeesAfter).to.equal(amount)
-
 		})
 
 		it('shows correct balance: dust', async () => {
@@ -134,9 +134,7 @@ describe('DSC', () => {
 			await timeJumpForward(101 * 365 * 24 * 60 * 60)
 
 			const balance = await DSC.balanceOf(user.address)
-			const balanceWithFees = await DSC.balanceOfWithFee(
-				user.address,
-			)
+			const balanceWithFees = await DSC.balanceOfWithFee(user.address)
 
 			expect(balance).to.equal(0)
 			expect(balanceWithFees).to.equal(amount)
@@ -145,68 +143,20 @@ describe('DSC', () => {
 
 	describe('Transfer', () => {
 		it('always possible to transfer all tokens', async () => {
-			const { DSC,  users, decimals } = await setup()
+			const { DSC, users, decimals } = await setup()
 			let sender = users[0]
 			let receiver = users[1]
 
 			const amount = ethers.parseUnits('100', decimals)
-			await fundFromDeployer(
-				DSC,
-				sender.address,
-				amount,
-			)
+			await fundFromDeployer(DSC, sender.address, amount)
 
 			await timeJumpForward(365 * 24 * 60 * 60)
 
-			let balanceBefore = await DSC.balanceOf.staticCall(
-				sender.address,
-			)
+			let balanceBefore = await DSC.balanceOf.staticCall(sender.address)
 
 			await DSC.connect(sender).transferAll(receiver.address)
 
-			let balance = await DSC.balanceOf.staticCall(
-				sender.address,
-			)
-			let balanceAndFee = await DSC.balanceOfWithFee.staticCall(
-				sender.address,
-			)
-			let fee = balanceAndFee-balance
-
-			expect(balance).to.equal(0)
-			expect(fee).to.equal(0)
-
-			let receiverBalance = await DSC.balanceOf.staticCall(
-				receiver.address,
-			)
-			let receiverFee = balanceAndFee-balance
-
-			expect(receiverBalance).to.be.closeTo(balanceBefore,10)
-
-			expect(receiverFee).to.equal(0)
-		})
-		it('always possible to transfer all tokens: dust', async () => {
-			const { DSC,  users } = await setup()
-			let sender = users[0]
-			let receiver = users[1]
-
-			const amount: bigint = BigInt(1);
-			await fundFromDeployer(
-				DSC	,
-				sender.address,
-				amount,
-			)
-
-			await timeJumpForward(365 * 24 * 60 * 60)
-
-			let balanceBefore = await DSC.balanceOf.staticCall(
-				sender.address,
-			)
-
-			await DSC.connect(sender).transferAll(receiver.address)
-
-			let balance = await DSC.balanceOf.staticCall(
-				sender.address,
-			)
+			let balance = await DSC.balanceOf.staticCall(sender.address)
 			let balanceAndFee = await DSC.balanceOfWithFee.staticCall(
 				sender.address,
 			)
@@ -218,16 +168,48 @@ describe('DSC', () => {
 			let receiverBalance = await DSC.balanceOf.staticCall(
 				receiver.address,
 			)
-			let receiverFee = balanceAndFee-balance
+			let receiverFee = balanceAndFee - balance
 
-			expect(receiverBalance).to.be.closeTo(balanceBefore,10)
+			expect(receiverBalance).to.be.closeTo(balanceBefore, 10)
+
+			expect(receiverFee).to.equal(0)
+		})
+		it('always possible to transfer all tokens: dust', async () => {
+			const { DSC, users } = await setup()
+			let sender = users[0]
+			let receiver = users[1]
+
+			const amount: bigint = BigInt(1)
+			await fundFromDeployer(DSC, sender.address, amount)
+
+			await timeJumpForward(365 * 24 * 60 * 60)
+
+			let balanceBefore = await DSC.balanceOf.staticCall(sender.address)
+
+			await DSC.connect(sender).transferAll(receiver.address)
+
+			let balance = await DSC.balanceOf.staticCall(sender.address)
+			let balanceAndFee = await DSC.balanceOfWithFee.staticCall(
+				sender.address,
+			)
+			let fee = balanceAndFee - balance
+
+			expect(balance).to.equal(0)
+			expect(fee).to.equal(0)
+
+			let receiverBalance = await DSC.balanceOf.staticCall(
+				receiver.address,
+			)
+			let receiverFee = balanceAndFee - balance
+
+			expect(receiverBalance).to.be.closeTo(balanceBefore, 10)
 			expect(receiverFee).to.equal(0)
 		})
 	})
 
 	describe('Fee last paid', () => {
 		it('requires amount > 0', async () => {
-			const { DSC,  users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 			let sender = users[0]
 			let receiver = users[1]
 
@@ -243,7 +225,7 @@ describe('DSC', () => {
 		})
 
 		it('initialised after receiving tokens', async () => {
-			const { DSC,  users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 
 			let user = users[0]
 
@@ -260,7 +242,7 @@ describe('DSC', () => {
 		})
 
 		it('receiving tokens updates', async () => {
-			const { DSC,  users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 
 			let sender = users[0]
 			let receiver = users[1]
@@ -273,9 +255,8 @@ describe('DSC', () => {
 
 			expect(feeLastPaid).to.equal(0)
 
-
 			await DSC.connect(sender).transfer(receiver.address, amount)
-			
+
 			const timeStamp = await time.latest()
 			feeLastPaid = await DSC.feeLastPaid(receiver.address)
 			expect(feeLastPaid).to.equal(timeStamp)
@@ -284,7 +265,7 @@ describe('DSC', () => {
 
 	describe('Fee collection', () => {
 		it('trigger fee deduction', async () => {
-			const { DSC,  users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 			const user = users[0]
 
 			await fundFromDeployer(
@@ -297,12 +278,15 @@ describe('DSC', () => {
 
 			await timeJumpForward(365 * 24 * 60 * 60)
 
-			await DSC.connect(user).collectFees([user.address])			
+			await DSC.connect(user).collectFees([user.address])
 		})
 		it('collects 100% fees', async () => {
-			const { DSC,   users, decimals, feeRate} = await setup()
+			const { DSC, users, decimals, feeRate } = await setup()
 
-			let necessaryTime = BigInt(10 ** Number(decimals)) / feeRate * BigInt(365 * 24 * 60 * 60) + BigInt(1)
+			let necessaryTime =
+				(BigInt(10 ** Number(decimals)) / feeRate) *
+					BigInt(365 * 24 * 60 * 60) +
+				BigInt(1)
 
 			const user = users[0]
 			const amount = ethers.parseUnits('100', decimals)
@@ -318,11 +302,11 @@ describe('DSC', () => {
 			expect(balance).to.equal(0)
 
 			await expect(DSC.connect(user).collectFees([user.address]))
-			
-			const balanceAfterCollection = await DSC.balanceOf(
+
+			const balanceAfterCollection = await DSC.balanceOf(user.address)
+			const balanceWithFeeAdterCollection = await DSC.balanceOfWithFee(
 				user.address,
 			)
-			const balanceWithFeeAdterCollection = await DSC.balanceOfWithFee(user.address)
 
 			expect(balanceAfterCollection).to.equal(0)
 			expect(balanceWithFeeAdterCollection).to.equal(0)
@@ -331,14 +315,12 @@ describe('DSC', () => {
 
 	describe('Calculate fees', () => {
 		it('fees deducted from balance correctly', async () => {
-			const { DSC,   users, decimals, feeRate} = await setup()
+			const { DSC, users, decimals, feeRate } = await setup()
 
 			const user = users[0]
 
 			expect(await DSC.balanceOf(user.address)).to.equal(0)
-			expect(await DSC.balanceOfWithFee(user.address)).to.equal(
-				0,
-			)
+			expect(await DSC.balanceOfWithFee(user.address)).to.equal(0)
 
 			const amount = ethers.parseUnits('100', decimals)
 			await fundFromDeployer(DSC, user.address, amount)
@@ -350,18 +332,18 @@ describe('DSC', () => {
 			const t = (365 * 24 * 60 * 60) / 2 // 1/2 year
 			await timeJumpForward(t)
 
-			const balance = await DSC.balanceOf.staticCall(
+			const balance = await DSC.balanceOf.staticCall(user.address)
+			const balanceAndFee = await DSC.balanceOfWithFee.staticCall(
 				user.address,
 			)
-			const balanceAndFee = await DSC.balanceOfWithFee.staticCall(user.address)
-			const fee = balanceAndFee-balance
+			const fee = balanceAndFee - balance
 
-			const expectedFee = BigInt(100)*(feeRate)/BigInt(2)
+			const expectedFee = (BigInt(100) * feeRate) / BigInt(2)
 
 			expect(fee).to.equal(expectedFee)
 		})
 		it('fees from dust amounts', async () => {
-			const { DSC, users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 
 			const user = users[0]
 
@@ -385,7 +367,7 @@ describe('DSC', () => {
 
 	describe('Burn', () => {
 		it('only by minter role', async () => {
-			const { DSC, users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 
 			let user = users[0]
 
@@ -400,16 +382,19 @@ describe('DSC', () => {
 		})
 
 		it('needs allowance', async () => {
-			const { DSC, users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 
 			const user = users[0]
 			const amount = ethers.parseUnits('100', decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
-			await expect(DSC.burn(user.address, amount),).to.be.revertedWith('ERC20: insufficient allowance')})
+			await expect(DSC.burn(user.address, amount)).to.be.revertedWith(
+				'ERC20: insufficient allowance',
+			)
+		})
 
 		it('burns tokens', async () => {
-			const { DSC, minter,users, decimals} = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			const user = users[0]
 			const amount = ethers.parseUnits('100', decimals)
@@ -426,26 +411,27 @@ describe('DSC', () => {
 			const balanceAfter = await DSC.balanceOf(user.address)
 			const supplyAfter = await DSC.totalSupply()
 
-			expect(balanceAfter).to.be.closeTo(balanceBefore-burnAmount,BigInt(1 * 10 ** Number(decimals)))
-			expect(supplyAfter).to.equal(supplyBefore-burnAmount)
+			expect(balanceAfter).to.be.closeTo(
+				balanceBefore - burnAmount,
+				BigInt(1 * 10 ** Number(decimals)),
+			)
+			expect(supplyAfter).to.equal(supplyBefore - burnAmount)
 		})
 	})
 
 	describe('Mint', () => {
 		it('only minter', async () => {
-			const { DSC, users, decimals} = await setup()
+			const { DSC, users, decimals } = await setup()
 
 			const amount = ethers.parseUnits('100', decimals)
 
-			await expect(
-				DSC.connect(users[0]).mint(amount),
-			).to.be.revertedWith(
+			await expect(DSC.connect(users[0]).mint(amount)).to.be.revertedWith(
 				'ERC20WithFees: only minter can call this function',
 			)
 		})
 
 		it('mints to minter address', async () => {
-			const { DSC, minter, decimals} = await setup()
+			const { DSC, minter, decimals } = await setup()
 
 			const amount = ethers.parseUnits('100', decimals)
 
@@ -457,18 +443,16 @@ describe('DSC', () => {
 			const supplyAfter = await DSC.totalSupply()
 			const balanceAfter = await DSC.balanceOf(minter.address)
 
-			expect(supplyAfter).to.equal(supplyBefore+amount)
-			expect(balanceAfter).to.equal(balanceBefore+amount)
+			expect(supplyAfter).to.equal(supplyBefore + amount)
+			expect(balanceAfter).to.equal(balanceBefore + amount)
 		})
 	})
 
 	describe('Fee exemption', () => {
 		it('exempt addresses do not pay fees', async () => {
-			const { DSC, feeCollector} = await setup()
+			const { DSC, feeCollector } = await setup()
 
-			const balanceBefore = await DSC.balanceOf(
-				feeCollector.address,
-			)
+			const balanceBefore = await DSC.balanceOf(feeCollector.address)
 			const balanceWithFeeBefore = await DSC.balanceOfWithFee(
 				feeCollector.address,
 			)
@@ -477,9 +461,7 @@ describe('DSC', () => {
 
 			await timeJumpForward(MONTH * 1000)
 
-			const balanceAfter = await DSC.balanceOf(
-				feeCollector.address,
-			)
+			const balanceAfter = await DSC.balanceOf(feeCollector.address)
 			const balanceWithFeeAfter = await DSC.balanceOfWithFee(
 				feeCollector.address,
 			)
@@ -502,26 +484,20 @@ describe('DSC', () => {
 		it('Cannot be zero address', async () => {
 			const { DSC } = await setup()
 			await expect(
-				DSC.setFeeCollectionAddress(
-					ZeroAddress
-				),
+				DSC.setFeeCollectionAddress(ZeroAddress),
 			).to.be.revertedWith(
 				'ERC20WithFees: collection address cannot be zero',
 			)
 		})
 
 		it('Set new fee collector', async () => {
-			const { DSC, users, feeCollector } =
-				await setup()
+			const { DSC, users, feeCollector } = await setup()
 
 			const user = users[0]
-			await expect(
-				DSC.setFeeCollectionAddress(user.address),
-			).to.not.be.reverted
+			await expect(DSC.setFeeCollectionAddress(user.address)).to.not.be
+				.reverted
 
-			const lastPaid = await DSC.feeLastPaid(
-				feeCollector.address,
-			)
+			const lastPaid = await DSC.feeLastPaid(feeCollector.address)
 			const latestBlockTime = await time.latest()
 
 			expect(lastPaid).to.equal(latestBlockTime)
@@ -540,19 +516,16 @@ describe('DSC', () => {
 
 		it('cannot be zero address', async () => {
 			const { DSC } = await setup()
-			await expect(
-				DSC.setMinterRole(ZeroAddress),
-			).to.be.revertedWith(
+			await expect(DSC.setMinterRole(ZeroAddress)).to.be.revertedWith(
 				'ERC20WithFees: collection address cannot be zero',
 			)
 		})
 
 		it('set up new minter role', async () => {
-			const { DSC, users,  minter } = await setup()
+			const { DSC, users, minter } = await setup()
 
 			const user = users[0]
-			await expect(DSC.setMinterRole(user.address)).to
-				.not.be.reverted
+			await expect(DSC.setMinterRole(user.address)).to.not.be.reverted
 
 			const lastPaid = await DSC.feeLastPaid(minter.address)
 			const latestBlockTime = await time.latest()
@@ -563,7 +536,7 @@ describe('DSC', () => {
 
 	describe('Set new fee rate', () => {
 		it('Only owner', async () => {
-			const { DSC, users,  } = await setup()
+			const { DSC, users } = await setup()
 
 			let user = users[0]
 
@@ -573,13 +546,11 @@ describe('DSC', () => {
 		})
 
 		it('Cannot be more than max', async () => {
-			const { DSC  } = await setup()
+			const { DSC } = await setup()
 
 			let feeLastChanged = await DSC.lastFeeChange()
 			let max = await DSC.maxFee()
-			await expect(
-				DSC.setFeeRate(max+BigInt(1)),
-			).to.be.revertedWith(
+			await expect(DSC.setFeeRate(max + BigInt(1))).to.be.revertedWith(
 				'ERC20WithFees: fee cannot be more than max fee',
 			)
 			let feeLastChangedAfter = await DSC.lastFeeChange()
@@ -587,15 +558,15 @@ describe('DSC', () => {
 		})
 
 		it('delay ', async () => {
-			const { DSC,  } = await setup()
+			const { DSC } = await setup()
 
 			const fee = await DSC.feeRate()
 
 			let feeLastChanged = await DSC.lastFeeChange()
 
-			await expect(
-				DSC.setFeeRate(fee+BigInt(1)),
-			).to.be.revertedWith('ERC20WithFees: fee change delay not passed')
+			await expect(DSC.setFeeRate(fee + BigInt(1))).to.be.revertedWith(
+				'ERC20WithFees: fee change delay not passed',
+			)
 
 			let feeLastChangedAfter = await DSC.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(feeLastChanged)
@@ -609,18 +580,17 @@ describe('DSC', () => {
 			const fee = await DSC.feeRate()
 
 			let latestBlockTime = await time.latest()
-			let travelTo = BigInt(latestBlockTime)+delay
+			let travelTo = BigInt(latestBlockTime) + delay
 
 			await time.increaseTo(travelTo)
 
-			await expect(DSC.setFeeRate(fee+BigInt(1))).to.not
-				.be.reverted
+			await expect(DSC.setFeeRate(fee + BigInt(1))).to.not.be.reverted
 			let feeLastChangedAfter = await DSC.lastFeeChange()
-			expect(feeLastChangedAfter).to.equal(travelTo+BigInt(1))
+			expect(feeLastChangedAfter).to.equal(travelTo + BigInt(1))
 		})
 
 		it('forgets outstanding debt with old fee rate', async () => {
-			const { DSC,  users, decimals } = await setup()
+			const { DSC, users, decimals } = await setup()
 
 			const user = users[0]
 			await fundFromDeployer(
@@ -631,32 +601,29 @@ describe('DSC', () => {
 
 			await timeJumpForward(MONTH)
 
-			let balancBefore = await DSC.balanceOf.staticCall(
+			let balancBefore = await DSC.balanceOf.staticCall(user.address)
+			let balanceWithFeeBefore = await DSC.balanceOfWithFee.staticCall(
 				user.address,
 			)
-			let balanceWithFeeBefore =
-				await DSC.balanceOfWithFee.staticCall(user.address)
 
 			expect(balancBefore).to.not.be.equal(balanceWithFeeBefore)
 
 			let delay = await DSC.feeChangeMinDelay()
 			let latestBlockTime = await time.latest()
-			let travelTo = BigInt(latestBlockTime)+delay
+			let travelTo = BigInt(latestBlockTime) + delay
 
 			await time.increaseTo(travelTo)
 
 			const fee = await DSC.feeRate()
 
-			await expect(DSC.setFeeRate(fee+BigInt(1))).to.not
-				.be.reverted
+			await expect(DSC.setFeeRate(fee + BigInt(1))).to.not.be.reverted
 			let feeLastChangedAfter = await DSC.lastFeeChange()
-			expect(feeLastChangedAfter).to.equal(travelTo+BigInt(1))
+			expect(feeLastChangedAfter).to.equal(travelTo + BigInt(1))
 
-			let balanceAfter = await DSC.balanceOf.staticCall(
+			let balanceAfter = await DSC.balanceOf.staticCall(user.address)
+			let balanceWithFeeAfter = await DSC.balanceOfWithFee.staticCall(
 				user.address,
 			)
-			let balanceWithFeeAfter =
-				await DSC.balanceOfWithFee.staticCall(user.address)
 
 			expect(balanceAfter).to.equal(balanceWithFeeAfter)
 		})
@@ -672,9 +639,9 @@ describe('DSC', () => {
 
 		it('cannot be zero address', async () => {
 			const { DSC } = await setup()
-			await expect(
-				DSC.setOracleAddress(ZeroAddress),
-			).to.be.revertedWith('ERC20WithFees: oracle address cannot be zero')
+			await expect(DSC.setOracleAddress(ZeroAddress)).to.be.revertedWith(
+				'ERC20WithFees: oracle address cannot be zero',
+			)
 		})
 
 		it('only owner', async () => {
@@ -682,8 +649,8 @@ describe('DSC', () => {
 
 			const user = users[0]
 
-			await expect(DSC.connect(user).setOracleAddress(user.address)).to
-				.be.reverted
+			await expect(DSC.connect(user).setOracleAddress(user.address)).to.be
+				.reverted
 		})
 
 		it('can be changed', async () => {
@@ -694,7 +661,6 @@ describe('DSC', () => {
 
 			const oracle = await DSC.oracle()
 			expect(oracle).to.equal(user.address)
-				
 		})
 
 		it('limits token minting if set', async () => {
@@ -704,7 +670,7 @@ describe('DSC', () => {
 
 			const max = await Oracle.lockedValue()
 
-			await expect(DSC.mint(max+BigInt(1))).to.be.revertedWith(
+			await expect(DSC.mint(max + BigInt(1))).to.be.revertedWith(
 				'ERC20WithFees: new total supply amount would exceed reserve balance',
 			)
 		})
@@ -729,27 +695,23 @@ describe('DSC', () => {
 			const user = users[1]
 
 			let isExempt = await DSC.feeExempt(user.address)
-			expect(isExempt).to.be.false;
+			expect(isExempt).to.be.false
 
-			await expect(DSC.setFeeExempt(user.address)).to.not.be
-				.reverted
-
-			isExempt = await DSC.feeExempt(user.address)
-			expect(isExempt).to.be.true;
-
-			await expect(DSC.unsetFeeExempt(user.address)).to.not.be
-				.reverted
+			await expect(DSC.setFeeExempt(user.address)).to.not.be.reverted
 
 			isExempt = await DSC.feeExempt(user.address)
-			expect(isExempt).to.be.false;
+			expect(isExempt).to.be.true
+
+			await expect(DSC.unsetFeeExempt(user.address)).to.not.be.reverted
+
+			isExempt = await DSC.feeExempt(user.address)
+			expect(isExempt).to.be.false
 		})
 
 		it('exempt addresses do not pay fees', async () => {
 			const { DSC, feeCollector } = await setup()
 
-			const balanceBefore = await DSC.balanceOf(
-				feeCollector.address,
-			)
+			const balanceBefore = await DSC.balanceOf(feeCollector.address)
 			const balanceWithFeeBefore = await DSC.balanceOfWithFee(
 				feeCollector.address,
 			)
@@ -758,9 +720,7 @@ describe('DSC', () => {
 
 			await timeJumpForward(MONTH * 1000)
 
-			const balanceAfter = await DSC.balanceOf(
-				feeCollector.address,
-			)
+			const balanceAfter = await DSC.balanceOf(feeCollector.address)
 			const balanceWithFeeAfter = await DSC.balanceOfWithFee(
 				feeCollector.address,
 			)
@@ -772,7 +732,7 @@ describe('DSC', () => {
 	describe('Test Upgrade', () => {
 		var DSCV2Address: string
 		beforeEach(async () => {
-			const {  } = await setup()
+			const {} = await setup()
 
 			// Deploy new implementation
 			const NewDSC = await ethers.getContractFactory('DSC')
@@ -789,7 +749,8 @@ describe('DSC', () => {
 
 			const user = users[0]
 
-			await expect(DSC.connect(user).upgradeToAndCall(user.address, '0x')).to.be.reverted
+			await expect(DSC.connect(user).upgradeToAndCall(user.address, '0x'))
+				.to.be.reverted
 		})
 		it('Upgrade to new contract', async () => {
 			const { DSC, owner } = await setup()

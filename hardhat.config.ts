@@ -1,9 +1,7 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-
+import { HardhatUserConfig } from 'hardhat/config'
+import '@nomicfoundation/hardhat-toolbox'
 
 import { node_url, accounts } from './utils/network'
-
 
 const config: HardhatUserConfig = {
 	solidity: {
@@ -21,10 +19,10 @@ const config: HardhatUserConfig = {
 	},
 
 	typechain: {
-		outDir: "typechain-types",
-		target: "ethers-v6",
-	  },
-	
+		outDir: 'typechain-types',
+		target: 'ethers-v6',
+	},
+
 	networks: {
 		hardhat: {
 			initialBaseFeePerGas: 0, // to fix : https://github.com/sc-forks/solidity-coverage/issues/652, see https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136

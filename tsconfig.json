@@ -15,10 +15,8 @@
     "./test",
     "typechain/**/*"
   ],
-  "files": [
-    "hardhat.config.ts"
-  ],
+  "files": ["hardhat.config.ts"],
   "ts-node": {
     "files": true
-  },
+  }
 }
