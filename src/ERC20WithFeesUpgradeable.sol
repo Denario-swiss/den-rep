@@ -33,7 +33,6 @@ abstract contract ERC20WithFeesUpgradeable is
 		address _feeCollectionAddress;
 		address _minterAddress;
 		uint256 feeRate;
-		uint256 maxFeeDuration;
 		uint256 lastFeeChange;
 		uint256 maxFee;
 		uint256 feeChangeMinDelay;
@@ -117,8 +116,6 @@ abstract contract ERC20WithFeesUpgradeable is
 		$._decimals = decimals_;
 
 		$.feeRate = feeRate_;
-		$.maxFeeDuration = Math.mulDiv(10 ** decimals_, 365 days, feeRate_);
-
 		$.lastFeeChange = block.timestamp;
 		$.feePrecision = 365 days * 10 ** decimals_;
 		$.maxFee = maxFee_;
@@ -517,16 +514,17 @@ abstract contract ERC20WithFeesUpgradeable is
 
 		uint256 elapsed = block.timestamp - lastPaid;
 
-		if (elapsed >= $.maxFeeDuration) {
-			return $._balances[account];
+		uint256 fee = Math.mulDiv(
+			elapsed * $.feeRate,
+			$._balances[account],
+			$.feePrecision
+		);
+
+		if (fee > $._balances[account]) {
+			fee = $._balances[account];
 		}
 
-		return
-			Math.mulDiv(
-				elapsed * $.feeRate,
-				$._balances[account],
-				$.feePrecision
-			);
+		return fee;
 	}
 
 	function _payFee(address account) internal returns (uint256) {
@@ -557,7 +555,6 @@ abstract contract ERC20WithFeesUpgradeable is
 
 		$.lastFeeChange = block.timestamp;
 		$.feeRate = newFee_;
-		$.maxFeeDuration = Math.mulDiv(10 ** $._decimals, 365 days, $.feeRate);
 
 		emit FeeChanged($.feeRate);
 	}
