@@ -1,11 +1,6 @@
-import 'dotenv/config'
-import { HardhatUserConfig } from 'hardhat/types'
-import 'hardhat-deploy'
-import '@nomiclabs/hardhat-ethers'
-import 'hardhat-gas-reporter'
-import '@typechain/hardhat'
-import 'solidity-coverage'
-import 'hardhat-deploy-tenderly'
+import { HardhatUserConfig } from 'hardhat/config'
+import '@nomicfoundation/hardhat-toolbox'
+
 import { node_url, accounts } from './utils/network'
 
 const config: HardhatUserConfig = {
@@ -22,10 +17,12 @@ const config: HardhatUserConfig = {
 			},
 		],
 	},
-	namedAccounts: {
-		deployer: 0,
-		feeCollector: 1,
+
+	typechain: {
+		outDir: 'typechain-types',
+		target: 'ethers-v6',
 	},
+
 	networks: {
 		hardhat: {
 			initialBaseFeePerGas: 0, // to fix : https://github.com/sc-forks/solidity-coverage/issues/652, see https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136
@@ -43,11 +40,11 @@ const config: HardhatUserConfig = {
 			accounts: accounts('sepolia'),
 		},
 	},
-	verify: {
-		etherscan: {
-			apiKey: process.env.ETHERSCAN_API_KEY,
-		},
+
+	etherscan: {
+		apiKey: process.env.ETHERSCAN_API_KEY,
 	},
+
 	paths: {
 		sources: 'src',
 	},
