@@ -1,22 +1,22 @@
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs'
+import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs"
 import {
 	loadFixture,
 	time,
-} from '@nomicfoundation/hardhat-toolbox/network-helpers'
-import { expect } from 'chai'
-import { ethers, ignition } from 'hardhat'
-import DSCModule from '../ignition/modules/ProxyModule'
-import OracleModule from '../ignition/modules/OracleModule'
+} from "@nomicfoundation/hardhat-toolbox/network-helpers"
+import { expect } from "chai"
+import { ethers, ignition } from "hardhat"
+import DSCModule from "../ignition/modules/ProxyModule"
+import OracleModule from "../ignition/modules/OracleModule"
 import {
 	Proxy,
 	DSC,
 	DSC__factory,
 	MockOracle,
 	MockOracle__factory,
-} from '../typechain-types'
-import { BigNumberish, ZeroAddress } from 'ethers'
+} from "../typechain-types"
+import { BigNumberish, ZeroAddress } from "ethers"
 
-const SUPPLY = ethers.parseUnits('1000000', 8)
+const SUPPLY = ethers.parseUnits("1000000", 8)
 const MONTH = 30 * 24 * 60 * 60
 const YEAR = 365 * 24 * 60 * 60
 
@@ -76,9 +76,9 @@ const setup = async () => {
 	}
 }
 
-describe('DSC', () => {
-	describe('Deployment', () => {
-		it('shown correct deployment data', async () => {
+describe("DSC", () => {
+	describe("Deployment", () => {
+		it("shown correct deployment data", async () => {
 			const { instance } = await setup()
 
 			const name = await instance.name()
@@ -86,19 +86,19 @@ describe('DSC', () => {
 			const decimals = await instance.decimals()
 			const totalSupply = await instance.totalSupply()
 
-			expect(name).to.equal('Denario Silver Coin')
-			expect(symbol).to.equal('DSC')
+			expect(name).to.equal("Denario Silver Coin")
+			expect(symbol).to.equal("DSC")
 			expect(decimals).to.equal(8)
 			expect(totalSupply).to.equal(SUPPLY)
 		})
 	})
-	describe('Balance', () => {
-		it('shows correct balance', async () => {
+	describe("Balance", () => {
+		it("shows correct balance", async () => {
 			const { DSC, users, decimals, feeRate } = await setup()
 
 			const user = users[1]
 
-			const amount = ethers.parseUnits('1', decimals)
+			const amount = ethers.parseUnits("1", decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
 			let balanceBefore = await DSC.balanceOf(user.address)
@@ -124,11 +124,11 @@ describe('DSC', () => {
 			expect(balanceWithFeesAfter).to.equal(amount)
 		})
 
-		it('shows correct balance: dust', async () => {
+		it("shows correct balance: dust", async () => {
 			const { DSC, users, decimals } = await setup()
 			const user = users[6]
 
-			const amount = ethers.parseUnits('0.00000001', decimals)
+			const amount = ethers.parseUnits("0.00000001", decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
 			await timeJumpForward(101 * 365 * 24 * 60 * 60)
@@ -141,13 +141,13 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Transfer', () => {
-		it('always possible to transfer all tokens', async () => {
+	describe("Transfer", () => {
+		it("always possible to transfer all tokens", async () => {
 			const { DSC, users, decimals } = await setup()
 			let sender = users[0]
 			let receiver = users[1]
 
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 			await fundFromDeployer(DSC, sender.address, amount)
 
 			await timeJumpForward(365 * 24 * 60 * 60)
@@ -174,7 +174,7 @@ describe('DSC', () => {
 
 			expect(receiverFee).to.equal(0)
 		})
-		it('always possible to transfer all tokens: dust', async () => {
+		it("always possible to transfer all tokens: dust", async () => {
 			const { DSC, users } = await setup()
 			let sender = users[0]
 			let receiver = users[1]
@@ -207,29 +207,29 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Fee last paid', () => {
-		it('requires amount > 0', async () => {
+	describe("Fee last paid", () => {
+		it("requires amount > 0", async () => {
 			const { DSC, users, decimals } = await setup()
 			let sender = users[0]
 			let receiver = users[1]
 
-			const amount = ethers.parseUnits('0', decimals)
+			const amount = ethers.parseUnits("0", decimals)
 
 			await expect(
 				DSC.connect(sender).transfer(receiver.address, amount),
 			).to.be.revertedWith(
-				'ERC20: transfer amount must be greater than 0',
+				"ERC20: transfer amount must be greater than 0",
 			)
 			let feeLastPaid = await DSC.feeLastPaid(receiver.address)
 			expect(feeLastPaid).to.equal(0)
 		})
 
-		it('initialised after receiving tokens', async () => {
+		it("initialised after receiving tokens", async () => {
 			const { DSC, users, decimals } = await setup()
 
 			let user = users[0]
 
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 
 			await fundFromDeployer(DSC, user.address, amount)
 
@@ -241,13 +241,13 @@ describe('DSC', () => {
 			expect(feeLastPaid).to.equal(timeStamp)
 		})
 
-		it('receiving tokens updates', async () => {
+		it("receiving tokens updates", async () => {
 			const { DSC, users, decimals } = await setup()
 
 			let sender = users[0]
 			let receiver = users[1]
 
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 			await fundFromDeployer(DSC, sender.address, amount)
 
 			await DSC.transfer(sender.address, amount)
@@ -263,15 +263,15 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Fee collection', () => {
-		it('trigger fee deduction', async () => {
+	describe("Fee collection", () => {
+		it("trigger fee deduction", async () => {
 			const { DSC, users, decimals } = await setup()
 			const user = users[0]
 
 			await fundFromDeployer(
 				DSC,
 				user.address,
-				ethers.parseUnits('1', decimals),
+				ethers.parseUnits("1", decimals),
 			)
 
 			const fee = await DSC.feeRate()
@@ -280,7 +280,7 @@ describe('DSC', () => {
 
 			await DSC.connect(user).collectFees([user.address])
 		})
-		it('collects 100% fees', async () => {
+		it("collects 100% fees", async () => {
 			const { DSC, users, decimals, feeRate } = await setup()
 
 			let necessaryTime =
@@ -289,7 +289,7 @@ describe('DSC', () => {
 				BigInt(1)
 
 			const user = users[0]
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 
 			await fundFromDeployer(DSC, user.address, amount)
 
@@ -313,8 +313,8 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Calculate fees', () => {
-		it('fees deducted from balance correctly', async () => {
+	describe("Calculate fees", () => {
+		it("fees deducted from balance correctly", async () => {
 			const { DSC, users, decimals, feeRate } = await setup()
 
 			const user = users[0]
@@ -322,7 +322,7 @@ describe('DSC', () => {
 			expect(await DSC.balanceOf(user.address)).to.equal(0)
 			expect(await DSC.balanceOfWithFee(user.address)).to.equal(0)
 
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
 			const balanceBefore = await DSC.balanceOf(user.address)
@@ -342,12 +342,12 @@ describe('DSC', () => {
 
 			expect(fee).to.equal(expectedFee)
 		})
-		it('fees from dust amounts', async () => {
+		it("fees from dust amounts", async () => {
 			const { DSC, users, decimals } = await setup()
 
 			const user = users[0]
 
-			const amount = ethers.parseUnits('0.00000001', decimals)
+			const amount = ethers.parseUnits("0.00000001", decimals)
 
 			await fundFromDeployer(DSC, user.address, amount)
 			const balanceBefore = await DSC.balanceOf(user.address)
@@ -365,39 +365,39 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Burn', () => {
-		it('only by minter role', async () => {
+	describe("Burn", () => {
+		it("only by minter role", async () => {
 			const { DSC, users, decimals } = await setup()
 
 			let user = users[0]
 
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
 			await expect(
 				DSC.connect(user).burn(user.address, amount),
 			).to.be.revertedWith(
-				'ERC20WithFees: only minter can call this function',
+				"ERC20WithFees: only minter can call this function",
 			)
 		})
 
-		it('needs allowance', async () => {
+		it("needs allowance", async () => {
 			const { DSC, users, decimals } = await setup()
 
 			const user = users[0]
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
 			await expect(DSC.burn(user.address, amount)).to.be.revertedWith(
-				'ERC20: insufficient allowance',
+				"ERC20: insufficient allowance",
 			)
 		})
 
-		it('burns tokens', async () => {
+		it("burns tokens", async () => {
 			const { DSC, minter, users, decimals } = await setup()
 
 			const user = users[0]
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
 			await DSC.connect(user).approve(minter.address, amount)
@@ -405,7 +405,7 @@ describe('DSC', () => {
 			const balanceBefore = await DSC.balanceOf(user.address)
 			const supplyBefore = await DSC.totalSupply()
 
-			const burnAmount = ethers.parseUnits('1', decimals)
+			const burnAmount = ethers.parseUnits("1", decimals)
 			await DSC.burn(user.address, burnAmount)
 
 			const balanceAfter = await DSC.balanceOf(user.address)
@@ -419,21 +419,21 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Mint', () => {
-		it('only minter', async () => {
+	describe("Mint", () => {
+		it("only minter", async () => {
 			const { DSC, users, decimals } = await setup()
 
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 
 			await expect(DSC.connect(users[0]).mint(amount)).to.be.revertedWith(
-				'ERC20WithFees: only minter can call this function',
+				"ERC20WithFees: only minter can call this function",
 			)
 		})
 
-		it('mints to minter address', async () => {
+		it("mints to minter address", async () => {
 			const { DSC, minter, decimals } = await setup()
 
-			const amount = ethers.parseUnits('100', decimals)
+			const amount = ethers.parseUnits("100", decimals)
 
 			const supplyBefore = await DSC.totalSupply()
 			const balanceBefore = await DSC.balanceOf(minter.address)
@@ -448,8 +448,8 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Fee exemption', () => {
-		it('exempt addresses do not pay fees', async () => {
+	describe("Fee exemption", () => {
+		it("exempt addresses do not pay fees", async () => {
 			const { DSC, feeCollector } = await setup()
 
 			const balanceBefore = await DSC.balanceOf(feeCollector.address)
@@ -470,8 +470,8 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('set new fee collection address', () => {
-		it('only owner', async () => {
+	describe("set new fee collection address", () => {
+		it("only owner", async () => {
 			const { DSC, users } = await setup()
 
 			const user = users[0]
@@ -481,16 +481,16 @@ describe('DSC', () => {
 			).to.be.reverted
 		})
 
-		it('Cannot be zero address', async () => {
+		it("Cannot be zero address", async () => {
 			const { DSC } = await setup()
 			await expect(
 				DSC.setFeeCollectionAddress(ZeroAddress),
 			).to.be.revertedWith(
-				'ERC20WithFees: collection address cannot be zero',
+				"ERC20WithFees: collection address cannot be zero",
 			)
 		})
 
-		it('Set new fee collector', async () => {
+		it("Set new fee collector", async () => {
 			const { DSC, users, feeCollector } = await setup()
 
 			const user = users[0]
@@ -504,8 +504,8 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Set new minter address', () => {
-		it('only owner', async () => {
+	describe("Set new minter address", () => {
+		it("only owner", async () => {
 			const { DSC, users } = await setup()
 
 			const user = users[0]
@@ -514,14 +514,14 @@ describe('DSC', () => {
 				.reverted
 		})
 
-		it('cannot be zero address', async () => {
+		it("cannot be zero address", async () => {
 			const { DSC } = await setup()
 			await expect(DSC.setMinterRole(ZeroAddress)).to.be.revertedWith(
-				'ERC20WithFees: collection address cannot be zero',
+				"ERC20WithFees: collection address cannot be zero",
 			)
 		})
 
-		it('set up new minter role', async () => {
+		it("set up new minter role", async () => {
 			const { DSC, users, minter } = await setup()
 
 			const user = users[0]
@@ -534,30 +534,30 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Set new fee rate', () => {
-		it('Only owner', async () => {
+	describe("Set new fee rate", () => {
+		it("Only owner", async () => {
 			const { DSC, users } = await setup()
 
 			let user = users[0]
 
 			await expect(
-				DSC.connect(user).setFeeRate(ethers.parseUnits('1', 8)),
+				DSC.connect(user).setFeeRate(ethers.parseUnits("1", 8)),
 			).to.be.reverted
 		})
 
-		it('Cannot be more than max', async () => {
+		it("Cannot be more than max", async () => {
 			const { DSC } = await setup()
 
 			let feeLastChanged = await DSC.lastFeeChange()
 			let max = await DSC.maxFee()
 			await expect(DSC.setFeeRate(max + BigInt(1))).to.be.revertedWith(
-				'ERC20WithFees: fee cannot be more than max fee',
+				"ERC20WithFees: fee cannot be more than max fee",
 			)
 			let feeLastChangedAfter = await DSC.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(feeLastChanged)
 		})
 
-		it('delay ', async () => {
+		it("delay ", async () => {
 			const { DSC } = await setup()
 
 			const fee = await DSC.feeRate()
@@ -565,14 +565,14 @@ describe('DSC', () => {
 			let feeLastChanged = await DSC.lastFeeChange()
 
 			await expect(DSC.setFeeRate(fee + BigInt(1))).to.be.revertedWith(
-				'ERC20WithFees: fee change delay not passed',
+				"ERC20WithFees: fee change delay not passed",
 			)
 
 			let feeLastChangedAfter = await DSC.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(feeLastChanged)
 		})
 
-		it('Set new fee rate', async () => {
+		it("Set new fee rate", async () => {
 			const { DSC } = await setup()
 
 			let delay = await DSC.feeChangeMinDelay()
@@ -589,14 +589,14 @@ describe('DSC', () => {
 			expect(feeLastChangedAfter).to.equal(travelTo + BigInt(1))
 		})
 
-		it('forgets outstanding debt with old fee rate', async () => {
+		it("forgets outstanding debt with old fee rate", async () => {
 			const { DSC, users, decimals } = await setup()
 
 			const user = users[0]
 			await fundFromDeployer(
 				DSC,
 				user.address,
-				ethers.parseUnits('1', decimals),
+				ethers.parseUnits("1", decimals),
 			)
 
 			await timeJumpForward(MONTH)
@@ -629,22 +629,22 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Oracle', () => {
-		it('initially set as zero address', async () => {
+	describe("Oracle", () => {
+		it("initially set as zero address", async () => {
 			const { DSC } = await setup()
 
 			const oracle = await DSC.oracle()
 			expect(oracle).to.equal(ZeroAddress)
 		})
 
-		it('cannot be zero address', async () => {
+		it("cannot be zero address", async () => {
 			const { DSC } = await setup()
 			await expect(DSC.setOracleAddress(ZeroAddress)).to.be.revertedWith(
-				'ERC20WithFees: oracle address cannot be zero',
+				"ERC20WithFees: oracle address cannot be zero",
 			)
 		})
 
-		it('only owner', async () => {
+		it("only owner", async () => {
 			const { DSC, users } = await setup()
 
 			const user = users[0]
@@ -653,7 +653,7 @@ describe('DSC', () => {
 				.reverted
 		})
 
-		it('can be changed', async () => {
+		it("can be changed", async () => {
 			const { DSC, users } = await setup()
 
 			const user = users[0]
@@ -663,7 +663,7 @@ describe('DSC', () => {
 			expect(oracle).to.equal(user.address)
 		})
 
-		it('limits token minting if set', async () => {
+		it("limits token minting if set", async () => {
 			const { DSC, Oracle } = await setup()
 
 			await DSC.setOracleAddress(await Oracle.getAddress())
@@ -671,13 +671,13 @@ describe('DSC', () => {
 			const max = await Oracle.lockedValue()
 
 			await expect(DSC.mint(max + BigInt(1))).to.be.revertedWith(
-				'ERC20WithFees: new total supply amount would exceed reserve balance',
+				"ERC20WithFees: new total supply amount would exceed reserve balance",
 			)
 		})
 	})
 
-	describe('Whitelist addresses', () => {
-		it('non owner reverts', async () => {
+	describe("Whitelist addresses", () => {
+		it("non owner reverts", async () => {
 			const { DSC, users } = await setup()
 
 			const user = users[1]
@@ -689,7 +689,7 @@ describe('DSC', () => {
 				.reverted
 		})
 
-		it('owner can whitelist', async () => {
+		it("owner can whitelist", async () => {
 			const { DSC, users } = await setup()
 
 			const user = users[1]
@@ -708,7 +708,7 @@ describe('DSC', () => {
 			expect(isExempt).to.be.false
 		})
 
-		it('exempt addresses do not pay fees', async () => {
+		it("exempt addresses do not pay fees", async () => {
 			const { DSC, feeCollector } = await setup()
 
 			const balanceBefore = await DSC.balanceOf(feeCollector.address)
@@ -729,36 +729,36 @@ describe('DSC', () => {
 		})
 	})
 
-	describe('Test Upgrade', () => {
+	describe("Test Upgrade", () => {
 		var DSCV2Address: string
 		beforeEach(async () => {
 			const {} = await setup()
 
 			// Deploy new implementation
-			const NewDSC = await ethers.getContractFactory('DSC')
+			const NewDSC = await ethers.getContractFactory("DSC")
 			const newDSC = await NewDSC.deploy()
 			await newDSC.waitForDeployment()
 
-			console.log('New DSCV2 deployed to:', newDSC.address)
+			console.log("New DSCV2 deployed to:", newDSC.address)
 
 			DSCV2Address = await newDSC.getAddress()
 		})
 
-		it('Upgrade only by owner', async () => {
+		it("Upgrade only by owner", async () => {
 			const { DSC, users } = await setup()
 
 			const user = users[0]
 
-			await expect(DSC.connect(user).upgradeToAndCall(user.address, '0x'))
+			await expect(DSC.connect(user).upgradeToAndCall(user.address, "0x"))
 				.to.be.reverted
 		})
-		it('Upgrade to new contract', async () => {
+		it("Upgrade to new contract", async () => {
 			const { DSC, owner } = await setup()
 
 			let contractOwner = await DSC.owner()
 			expect(owner).to.be.eq(contractOwner)
 
-			await DSC.upgradeToAndCall(DSCV2Address, '0x')
+			await DSC.upgradeToAndCall(DSCV2Address, "0x")
 
 			// console.log(res)
 		})

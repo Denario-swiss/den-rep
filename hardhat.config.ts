@@ -1,13 +1,13 @@
-import { HardhatUserConfig } from 'hardhat/config'
-import '@nomicfoundation/hardhat-toolbox'
+import { HardhatUserConfig } from "hardhat/config"
+import "@nomicfoundation/hardhat-toolbox"
 
-import { node_url, accounts } from './utils/network'
+import { node_url, accounts } from "./utils/network"
 
 const config: HardhatUserConfig = {
 	solidity: {
 		compilers: [
 			{
-				version: '0.8.20',
+				version: "0.8.20",
 				settings: {
 					optimizer: {
 						enabled: true,
@@ -19,8 +19,8 @@ const config: HardhatUserConfig = {
 	},
 
 	typechain: {
-		outDir: 'typechain-types',
-		target: 'ethers-v6',
+		outDir: "typechain-types",
+		target: "ethers-v6",
 	},
 
 	networks: {
@@ -28,16 +28,16 @@ const config: HardhatUserConfig = {
 			initialBaseFeePerGas: 0, // to fix : https://github.com/sc-forks/solidity-coverage/issues/652, see https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136
 		},
 		mumbai: {
-			url: node_url('mumbai'),
-			accounts: accounts('mumbai'),
+			url: node_url("mumbai"),
+			accounts: accounts("mumbai"),
 		},
 		polygon: {
-			url: node_url('polygon'),
-			accounts: accounts('polygon'),
+			url: node_url("polygon"),
+			accounts: accounts("polygon"),
 		},
 		sepolia: {
-			url: node_url('sepolia'),
-			accounts: accounts('sepolia'),
+			url: node_url("sepolia"),
+			accounts: accounts("sepolia"),
 		},
 	},
 
@@ -46,10 +46,10 @@ const config: HardhatUserConfig = {
 	},
 
 	paths: {
-		sources: 'src',
+		sources: "src",
 	},
 	gasReporter: {
-		currency: 'USD',
+		currency: "USD",
 		gasPrice: 100,
 		enabled: process.env.REPORT_GAS ? true : false,
 		coinmarketcap: process.env.COINMARKETCAP_API_KEY,
