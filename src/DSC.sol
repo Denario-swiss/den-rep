@@ -2,9 +2,9 @@
 // Compatible with OpenZeppelin Contracts ^5.0.0
 pragma solidity ^0.8.20;
 
-import './ERC20WithFeesUpgradeable.sol';
+import "./ERC20WithFeesUpgradeable.sol";
 
-import { UUPSUpgradeable } from '@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol';
+import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	/// @custom:oz-upgrades-unsafe-allow constructor
@@ -15,8 +15,8 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	function initialize() public initializer {
 		__ERC20WithFees_init(
 			msg.sender,
-			'Denario Silver Coin',
-			'DSC',
+			"Denario Silver Coin",
+			"DSC",
 			8,
 			1000000,
 			5000000,
@@ -26,7 +26,5 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 		);
 	}
 
-	function _authorizeUpgrade(
-		address newImplementation
-	) internal override onlyOwner {}
+	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

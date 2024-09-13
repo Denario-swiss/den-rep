@@ -22,7 +22,7 @@
     "test": "npx hardhat test",
     "solhint": "npx solhint \"src/**/*.sol\"",
     "lint": "prettier --list-different \"*.{js,ts,md,json}\" \"ignition/modules/*.{js,ts,md,json}\" \"test/*.{js,ts,md,json}\" \"src/**/*.sol\"",
-    "lint:fix": "npm run lint -- --write && npx eslint -- --fix",
+    "lint:fix": "prettier --list-different --write \"*.{js,ts,md,json}\" \"ignition/modules/*.{js,ts,md,json}\" \"test/*.{js,ts,md,json}\" \"src/**/*.sol\"",
     "postinstall": "npx hardhat typechain"
   }
 }
