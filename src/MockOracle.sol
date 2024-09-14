@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.1;
 
-import './IProofOfReserveOracle.sol';
+import "./IProofOfReserveOracle.sol";
 
 contract MockOracle is IProofOfReserveOracle {
 	uint256 constant _lockedValue = 1000000 * 10 ** 18;

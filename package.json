@@ -2,6 +2,7 @@
   "name": "denario-dsc",
   "description": "denario silver coin contract",
   "version": "0.1.0",
+  "author": "Denario Development Team <dev@denario.swiss",
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition-ethers": "v0.15.5",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
@@ -9,18 +10,22 @@
     "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "@typechain/ethers-v6": "^0.5.1",
     "chai-ethers": "^0.0.1",
+    "dotenv": "^16.4.5",
+    "eslint": "^9.10.0",
     "ethers": "^6.13.2",
     "hardhat": "^2.22.10",
-    "prettier-plugin-solidity": "1.1.3",
+    "prettier-plugin-solidity": "1.4.1",
+    "solhint": "^5.0.3",
     "typechain": "^8.3.2"
   },
   "scripts": {
-    "test": "hardhat test",
-    "lint": "npm run prettier -- --check && npm run eslint",
-    "lint:fix": "npm run prettier -- --write && npm run eslint -- --fix",
-    "prettier": "prettier \"*.{js,ts,md,json}\" \"ignition/modules/*.{js,ts,md,json}\" \"test/*.{js,ts,md,json}\" \"src/**/*.sol\""
-  },
-  "dependencies": {
-    "dotenv": "^16.4.5"
+    "deploy": "npx hardhat ignition deploy ignition/modules/ProxyModule.ts --network localhost",
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
+    "solhint": "npx solhint \"src/**/*.sol\"",
+    "lint": "prettier --list-different \"*.{js,ts,md,json}\" \"ignition/modules/*.{js,ts,md,json}\" \"test/*.{js,ts,md,json}\" \"src/**/*.sol\"",
+    "lint:fix": "prettier --list-different --write \"*.{js,ts,md,json}\" \"ignition/modules/*.{js,ts,md,json}\" \"test/*.{js,ts,md,json}\" \"src/**/*.sol\"",
+    "postinstall": "npx hardhat typechain"
   }
 }
