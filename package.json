@@ -19,7 +19,10 @@
     "typechain": "^8.3.2"
   },
   "scripts": {
+    "deploy": "npx hardhat ignition deploy ignition/modules/ProxyModule.ts --network localhost",
+    "compile": "npx hardhat compile",
     "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
     "solhint": "npx solhint \"src/**/*.sol\"",
     "lint": "prettier --list-different \"*.{js,ts,md,json}\" \"ignition/modules/*.{js,ts,md,json}\" \"test/*.{js,ts,md,json}\" \"src/**/*.sol\"",
     "lint:fix": "prettier --list-different --write \"*.{js,ts,md,json}\" \"ignition/modules/*.{js,ts,md,json}\" \"test/*.{js,ts,md,json}\" \"src/**/*.sol\"",
