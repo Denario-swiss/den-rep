@@ -2,17 +2,14 @@
 
 pragma solidity ^0.8.20;
 
-import { ERC20Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
-import { ContextUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
-import { Ownable2StepUpgradeable } from '@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol';
-import { Math } from '@openzeppelin/contracts/utils/math/Math.sol';
+import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./IProofOfReserveOracle.sol";
 
-abstract contract ERC20WithFeesUpgradeable is
-	ERC20Upgradeable,
-	Ownable2StepUpgradeable
-{
+abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgradeable {
 	event FeeChanged(uint256 newFee);
 	event OracleAddressChanged(address oracle);
 
@@ -170,11 +167,7 @@ abstract contract ERC20WithFeesUpgradeable is
 		return true;
 	}
 
-	function _update(
-		address from,
-		address to,
-		uint256 value
-	) internal virtual override {
+	function _update(address from, address to, uint256 value) internal virtual override {
 		if (from != address(0)) {
 			_payFee(from);
 		}
@@ -196,7 +189,7 @@ abstract contract ERC20WithFeesUpgradeable is
 			uint256 reserve = IProofOfReserveOracle($.oracle).lockedValue();
 			require(
 				reserve >= amount + super.totalSupply(),
-				'ERC20WithFees: new total supply amount would exceed reserve balance'
+				"ERC20WithFees: new total supply amount would exceed reserve balance"
 			);
 		}
 		super._mint($._minterAddress, amount);
