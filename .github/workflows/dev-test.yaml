@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - dev
-      - feat/tests
 
 env:
   SOLIDITY_VERSION: 0.8.20
@@ -16,10 +15,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Use Node.js 16.15.1
+      - name: Use Node.js 20.9.0
         uses: actions/setup-node@v1
         with:
-          node-version: 16.15.1
+          node-version: 20.9.0
 
       - name: Cache Node Modules
         id: cache-node-modules
@@ -42,10 +41,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Use Node.js 16.15.1
+      - name: Use Node.js 20.9.0
         uses: actions/setup-node@v1
         with:
-          node-version: 16.15.1
+          node-version: 20.9.0
 
       - name: Cache Node Modules
         id: cache-node-modules
