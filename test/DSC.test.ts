@@ -689,12 +689,10 @@ describe("DSC", () => {
 			const max = await Oracle.lockedValue()
 			const supplyBefore = await DSC.totalSupply()
 
-			await DSC.mint(max-supplyBefore)
+			await DSC.mint(max - supplyBefore)
 
 			const supply = await DSC.totalSupply()
 			expect(supply).to.equal(max)
-
-			
 		})
 	})
 
@@ -779,7 +777,6 @@ describe("DSC", () => {
 			expect(owner).to.be.eq(contractOwner)
 
 			await DSC.upgradeToAndCall(DSCV2Address, "0x")
-
 		})
 	})
 
