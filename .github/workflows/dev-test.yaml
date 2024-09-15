@@ -1,8 +1,7 @@
 name: dev-test
 on:
   pull_request:
-    branches: ["dev"]:
-    
+    branches: ["dev"]
 
 env:
   SOLIDITY_VERSION: 0.8.20
