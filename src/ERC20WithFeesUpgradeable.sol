@@ -2,25 +2,19 @@
 
 pragma solidity ^0.8.20;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./IProofOfReserveOracle.sol";
 
-abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20Metadata, Ownable2StepUpgradeable {
+abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgradeable {
 	event FeeChanged(uint256 newFee);
 	event OracleAddressChanged(address oracle);
 
 	/// @custom:storage-location erc7201:storage.ERC20WithFeesStorage
 	struct ERC20WithFeesStorage {
-		mapping(address account => uint256) _balances;
-		mapping(address account => mapping(address spender => uint256)) _allowances;
-		uint256 _totalSupply;
-		string _name;
-		string _symbol;
 		uint8 _decimals;
 		address oracle;
 		mapping(address => uint256) _feeLastPaid;
@@ -28,7 +22,6 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 		address _feeCollectionAddress;
 		address _minterAddress;
 		uint256 feeRate;
-		uint256 maxFeeDuration;
 		uint256 lastFeeChange;
 		uint256 maxFee;
 		uint256 feeChangeMinDelay;
@@ -84,6 +77,7 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 		address feeCollectionAddress_,
 		address minter_
 	) internal onlyInitializing {
+		__ERC20_init(name_, symbol_);
 		__Ownable_init(initialOwner);
 
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
@@ -96,13 +90,9 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 		);
 		require(minter_ != address(0), "ERC20WithFees: minter address cannot be the zero address");
 
-		$._name = name_;
-		$._symbol = symbol_;
 		$._decimals = decimals_;
 
 		$.feeRate = feeRate_;
-		$.maxFeeDuration = Math.mulDiv(10 ** decimals_, 365 days, feeRate_);
-
 		$.lastFeeChange = block.timestamp;
 		$.feePrecision = 365 days * 10 ** decimals_;
 		$.maxFee = maxFee_;
@@ -114,98 +104,24 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 		setFeeExempt(minter_);
 	}
 
-	// IERC20 implementation
-
-	/**
-	 * @dev See {IERC20-totalSupply}.
-	 */
-	function totalSupply() public view override returns (uint256) {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-		return $._totalSupply;
-	}
-
 	/**
 	 * @notice shows the amount of tokens that are available to be transferred, after fees are deducted
 	 */
 	function balanceOf(address account) public view override returns (uint256) {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
+		uint256 balance = super.balanceOf(account);
 
 		uint256 fee = _calculateFee(account);
-		if ($._balances[account] < fee) {
+		if (balance < fee) {
 			return 0;
 		}
-		return $._balances[account] - fee;
+		return balance - fee;
 	}
 
 	/**
 	 * @notice See {IERC20-balanceOf}.
 	 */
 	function balanceOfWithFee(address account) public view returns (uint256) {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		return $._balances[account];
-	}
-
-	/**
-	 * @dev See {IERC20-transfer}.
-	 *
-	 * Requirements:
-	 *
-	 * - `to` cannot be the zero address.
-	 * - the caller must have a balance of at least `amount`.
-	 */
-	function transfer(address to, uint256 amount) public virtual override returns (bool) {
-		address sender = _msgSender();
-		_transfer(sender, to, amount);
-		return true;
-	}
-
-	/**
-	 * @dev See {IERC20-allowance}.
-	 */
-	function allowance(address owner, address spender) public view virtual override returns (uint256) {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		return $._allowances[owner][spender];
-	}
-
-	/**
-	 * @dev See {IERC20-approve}.
-	 *
-	 * NOTE: If `amount` is the maximum `uint256`, the allowance is not updated on
-	 * `transferFrom`. This is semantically equivalent to an infinite approval.
-	 *
-	 * Requirements:
-	 *
-	 * - `spender` cannot be the zero address.
-	 */
-	function approve(address spender, uint256 amount) public virtual override returns (bool) {
-		address sender = _msgSender();
-		_approve(sender, spender, amount);
-		return true;
-	}
-
-	/**
-	 * @dev See {IERC20-transferFrom}.
-	 *
-	 * Emits an {Approval} event indicating the updated allowance. This is not
-	 * required by the EIP. See the note at the beginning of {ERC20}.
-	 *
-	 * NOTE: Does not update the allowance if the current allowance
-	 * is the maximum `uint256`.
-	 *
-	 * Requirements:
-	 *
-	 * - `from` and `to` cannot be the zero address.
-	 * - `from` must have a balance of at least `amount`.
-	 * - the caller must have allowance for ``from``'s tokens of at least
-	 * `amount`.
-	 */
-	function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
-		address spender = _msgSender();
-		_spendAllowance(from, spender, amount);
-		_transfer(from, to, amount);
-		return true;
+		return super.balanceOf(account);
 	}
 
 	/**
@@ -251,78 +167,14 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 		return true;
 	}
 
-	/**
-	 * @dev Moves `amount` of tokens from `sender` to `recipient`.
-	 *
-	 * This internal function is equivalent to {transfer}, and can be used to
-	 * e.g. implement automatic token fees, slashing mechanisms, etc.
-	 *
-	 * Emits a {Transfer} event.
-	 *
-	 * Requirements:
-	 *
-	 * - `from` cannot be the zero address.
-	 * - `to` cannot be the zero address.
-	 * - `from` must have a balance of at least `amount`.
-	 */
-	function _transfer(address from, address to, uint256 amount) internal virtual {
-		require(from != address(0), "ERC20: transfer from the zero address");
-		require(to != address(0), "ERC20: transfer to the zero address");
-		require(amount > 0, "ERC20: transfer amount must be greater than 0");
-		require(from != to, "ERC20: self transfer is not allowed");
-
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		_payFee(from);
-		require($._balances[from] >= amount, "ERC20: transfer amount exceeds balance");
-		$._balances[from] = $._balances[from] - amount;
-
-		_payFee(to);
-		$._balances[to] += amount;
-
-		emit Transfer(from, to, amount);
-	}
-
-	/** @dev Creates `amount` tokens and assigns them to `account`, increasing
-	 * the total supply.
-	 *
-	 * Emits a {Transfer} event with `from` set to the zero address.
-	 *
-	 * Requirements:
-	 *
-	 * - `account` cannot be the zero address.
-	 */
-	function _mint(address account, uint256 amount) internal virtual {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		$._totalSupply += amount;
-		$._balances[account] += amount;
-
-		emit Transfer(address(0), account, amount);
-	}
-
-	/**
-	 * @dev Destroys `amount` tokens from `account`, reducing the
-	 * total supply.
-	 *
-	 * Emits a {Transfer} event with `to` set to the zero address.
-	 *
-	 * Requirements:
-	 *
-	 * - `account` cannot be the zero address.
-	 * - `account` must have at least `amount` tokens.
-	 */
-	function _burn(address account, uint256 amount) internal virtual {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		uint256 accountBalance = $._balances[account];
-		require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
-		unchecked {
-			$._balances[account] = accountBalance - amount;
+	function _update(address from, address to, uint256 value) internal virtual override {
+		if (from != address(0)) {
+			_payFee(from);
 		}
-		$._totalSupply -= amount;
-
-		emit Transfer(account, address(0), amount);
+		if (to != address(0)) {
+			_payFee(to);
+		}
+		super._update(from, to, value);
 	}
 
 	/**
@@ -336,11 +188,11 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 		if ($.oracle != address(0)) {
 			uint256 reserve = IProofOfReserveOracle($.oracle).lockedValue();
 			require(
-				reserve >= amount + $._totalSupply,
+				reserve >= amount + super.totalSupply(),
 				"ERC20WithFees: new total supply amount would exceed reserve balance"
 			);
 		}
-		_mint($._minterAddress, amount);
+		super._mint($._minterAddress, amount);
 	}
 
 	/**
@@ -356,75 +208,14 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 	}
 
 	/**
-	 * @notice burns tokens, meaning that less real-world assets are now
-	 * represented by the token
-	 * @dev only the minter can burn tokens, with the approval of the owner
-	 * this is used in the process of redeeming tokens for real-world assets
-	 * if the owner has not enough balance to burn + pay fees, the fee will be paid from the burn amount
-	 * @param account the account to burn tokens from
-	 * @param amount the amount of tokens to burn
+	 * @dev Destroys a `value` amount of tokens from the caller.
+	 *
+	 * See {ERC20-_burn}.
 	 */
-	function burn(address account, uint256 amount) public onlyMinter returns (uint256) {
-		require(account != address(0), "ERC20: can't burn from the zero address");
-
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		address sender = _msgSender();
-		if (sender != account) {
-			_spendAllowance(account, sender, amount);
-		}
-		uint256 paid = _payFee(account);
-
-		if (paid > 0 && $._balances[account] < amount) {
-			amount = $._balances[account];
-		}
-
-		_burn(account, amount);
-		return amount;
+	function burnFrom(address account, uint256 value) public onlyMinter {
+		_spendAllowance(account, _msgSender(), value);
+		_burn(account, value);
 	}
-
-	/**
-	 * @dev Sets `amount` as the allowance of `spender` over the `owner` s tokens.
-	 *
-	 * This internal function is equivalent to `approve`, and can be used to
-	 * e.g. set automatic allowances for certain subsystems, etc.
-	 *
-	 * Emits an {Approval} event.
-	 *
-	 * Requirements:
-	 *
-	 * - `owner` cannot be the zero address.
-	 * - `spender` cannot be the zero address.
-	 */
-	function _approve(address owner, address spender, uint256 amount) internal virtual {
-		require(owner != address(0), "ERC20: approve from the zero address");
-		require(spender != address(0), "ERC20: approve to the zero address");
-
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		$._allowances[owner][spender] = amount;
-		emit Approval(owner, spender, amount);
-	}
-
-	/**
-	 * @dev Updates `owner` s allowance for `spender` based on spent `amount`.
-	 *
-	 * Does not update the allowance amount in case of infinite allowance.
-	 * Revert if not enough allowance is available.
-	 *
-	 * Might emit an {Approval} event.
-	 */
-	function _spendAllowance(address owner, address spender, uint256 amount) internal virtual {
-		uint256 currentAllowance = allowance(owner, spender);
-		if (currentAllowance != type(uint256).max) {
-			require(currentAllowance >= amount, "ERC20: insufficient allowance");
-			unchecked {
-				_approve(owner, spender, currentAllowance - amount);
-			}
-		}
-	}
-
-	// Token specific funtions to calculate and collect fees
 
 	/**
 	 * @notice returns the last time the fee was deducted for the given account
@@ -443,29 +234,32 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 	 */
 	function _calculateFee(address account) internal view returns (uint256) {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
+		uint256 balance = super.balanceOf(account);
 
-		if ($._balances[account] == 0 || $._feeExempt[account]) {
+		if (balance == 0 || $._feeExempt[account]) {
 			return 0;
 		}
 		uint256 lastPaid = $._feeLastPaid[account] > $.lastFeeChange ? $._feeLastPaid[account] : $.lastFeeChange;
 
 		uint256 elapsed = block.timestamp - lastPaid;
 
-		if (elapsed >= $.maxFeeDuration) {
-			return $._balances[account];
+		uint256 fee = Math.mulDiv(elapsed * $.feeRate, balance, $.feePrecision);
+
+		if (fee > balance) {
+			fee = balance;
 		}
 
-		return Math.mulDiv(elapsed * $.feeRate, $._balances[account], $.feePrecision);
+		return fee;
 	}
 
 	function _payFee(address account) internal returns (uint256) {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
+		uint256 balance = super.balanceOf(account);
 
 		uint256 fee = _calculateFee(account);
 		if (fee > 0) {
-			$._balances[account] -= fee;
-			$._balances[$._feeCollectionAddress] += fee;
-			emit Transfer(account, $._feeCollectionAddress, fee);
+			balance -= fee;
+			super._update(account, $._feeCollectionAddress, fee);
 		}
 		$._feeLastPaid[account] = block.timestamp;
 
@@ -480,7 +274,6 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 
 		$.lastFeeChange = block.timestamp;
 		$.feeRate = newFee_;
-		$.maxFeeDuration = Math.mulDiv(10 ** $._decimals, 365 days, $.feeRate);
 
 		emit FeeChanged($.feeRate);
 	}
@@ -567,16 +360,6 @@ abstract contract ERC20WithFeesUpgradeable is ContextUpgradeable, IERC20, IERC20
 	function decimals() public view virtual override returns (uint8) {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 		return $._decimals;
-	}
-
-	function name() public view virtual override returns (string memory) {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-		return $._name;
-	}
-
-	function symbol() public view virtual override returns (string memory) {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-		return $._symbol;
 	}
 
 	function feeRate() public view returns (uint256) {

@@ -208,22 +208,6 @@ describe("DSC", () => {
 	})
 
 	describe("Fee last paid", () => {
-		it("requires amount > 0", async () => {
-			const { DSC, users, decimals } = await setup()
-			let sender = users[0]
-			let receiver = users[1]
-
-			const amount = ethers.parseUnits("0", decimals)
-
-			await expect(
-				DSC.connect(sender).transfer(receiver.address, amount),
-			).to.be.revertedWith(
-				"ERC20: transfer amount must be greater than 0",
-			)
-			let feeLastPaid = await DSC.feeLastPaid(receiver.address)
-			expect(feeLastPaid).to.equal(0)
-		})
-
 		it("initialised after receiving tokens", async () => {
 			const { DSC, users, decimals } = await setup()
 
@@ -375,7 +359,7 @@ describe("DSC", () => {
 			await fundFromDeployer(DSC, user.address, amount)
 
 			await expect(
-				DSC.connect(user).burn(user.address, amount),
+				DSC.connect(user).burnFrom(user.address, amount),
 			).to.be.revertedWith(
 				"ERC20WithFees: only minter can call this function",
 			)
@@ -388,9 +372,7 @@ describe("DSC", () => {
 			const amount = ethers.parseUnits("100", decimals)
 			await fundFromDeployer(DSC, user.address, amount)
 
-			await expect(DSC.burn(user.address, amount)).to.be.revertedWith(
-				"ERC20: insufficient allowance",
-			)
+			await expect(DSC.burnFrom(user.address, amount)).to.be.reverted
 		})
 
 		it("burns tokens", async () => {
@@ -406,7 +388,7 @@ describe("DSC", () => {
 			const supplyBefore = await DSC.totalSupply()
 
 			const burnAmount = ethers.parseUnits("1", decimals)
-			await DSC.burn(user.address, burnAmount)
+			await DSC.burnFrom(user.address, burnAmount)
 
 			const balanceAfter = await DSC.balanceOf(user.address)
 			const supplyAfter = await DSC.totalSupply()
@@ -761,6 +743,102 @@ describe("DSC", () => {
 			await DSC.upgradeToAndCall(DSCV2Address, "0x")
 
 			// console.log(res)
+		})
+	})
+
+	describe("Test increase allowance", () => {
+		it("increase allowance", async () => {
+			const { DSC, users, decimals } = await setup()
+
+			const user = users[0]
+			const spender = users[1]
+
+			const amount = ethers.parseUnits("100", decimals)
+			const initialBalance = amount * BigInt(3)
+			await fundFromDeployer(DSC, user.address, initialBalance)
+
+			const allowanceBefore = await DSC.allowance(
+				user.address,
+				spender.address,
+			)
+
+			await DSC.connect(user).increaseAllowance(spender.address, amount)
+
+			const allowanceAfter = await DSC.allowance(
+				user.address,
+				spender.address,
+			)
+
+			expect(allowanceAfter).to.equal(allowanceBefore + amount)
+
+			await DSC.connect(user).increaseAllowance(spender.address, amount)
+
+			const allowanceAfter2 = await DSC.allowance(
+				user.address,
+				spender.address,
+			)
+
+			expect(allowanceAfter2).to.equal(allowanceAfter + amount)
+
+			// allowance can be used
+			await DSC.connect(user).approve(spender.address, amount)
+			await DSC.connect(spender).transferFrom(
+				user.address,
+				spender.address,
+				amount,
+			)
+
+			const balanceAfter = await DSC.balanceOf(user.address)
+			expect(balanceAfter).to.closeTo(initialBalance - amount, 100)
+			const senderBalance = await DSC.balanceOf(spender.address)
+			expect(senderBalance).to.equal(amount)
+		})
+
+		it("decrease allowance", async () => {
+			const { DSC, users, decimals } = await setup()
+
+			const user = users[0]
+			const spender = users[1]
+
+			const initialBalance = ethers.parseUnits("100", decimals)
+			const amount = ethers.parseUnits("1", decimals)
+
+			await fundFromDeployer(DSC, user.address, initialBalance)
+
+			await DSC.connect(user).increaseAllowance(
+				spender.address,
+				initialBalance,
+			)
+
+			const allowanceBefore = await DSC.allowance(
+				user.address,
+				spender.address,
+			)
+
+			await DSC.connect(user).decreaseAllowance(spender.address, amount)
+
+			const allowanceAfter = await DSC.allowance(
+				user.address,
+				spender.address,
+			)
+
+			expect(allowanceAfter).to.equal(allowanceBefore - amount)
+
+			await DSC.connect(user).decreaseAllowance(spender.address, amount)
+
+			const allowanceAfter2 = await DSC.allowance(
+				user.address,
+				spender.address,
+			)
+
+			expect(allowanceAfter2).to.equal(allowanceAfter - amount)
+
+			await expect(
+				DSC.connect(user).decreaseAllowance(
+					spender.address,
+					initialBalance,
+				),
+			).to.be.revertedWith("ERC20: decreased allowance below zero")
 		})
 	})
 })
