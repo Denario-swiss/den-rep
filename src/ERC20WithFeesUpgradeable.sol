@@ -7,9 +7,14 @@ import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/Co
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "./IProofOfReserveOracle.sol";
+import { IProofOfReserveOracle } from "./IProofOfReserveOracle.sol";
+import { IERC20WithFeesUpgradeableErrors } from "./IERC20WithFeesUpgradeableErrors.sol";
 
-abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgradeable {
+abstract contract ERC20WithFeesUpgradeable is
+	ERC20Upgradeable,
+	Ownable2StepUpgradeable,
+	IERC20WithFeesUpgradeableErrors
+{
 	event FeeChanged(uint256 newFee);
 	event OracleAddressChanged(address oracle);
 
@@ -78,13 +83,19 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
-		require(maxFee_ <= 10 ** decimals(), "ERC20WithFees: max fee too high");
-		require(feeRate_ <= maxFee_, "ERC20WithFees: fee cannot be more than max fee");
-		require(
-			feeCollectionAddress_ != address(0),
-			"ERC20WithFees: fee collection address cannot be the zero address"
-		);
-		require(minter_ != address(0), "ERC20WithFees: minter address cannot be the zero address");
+		if (maxFee_ > 10 ** decimals()) {
+			revert ERC20WithFeeFeeExceedsMaxFee(10 ** decimals());
+		}
+		if (feeRate_ > maxFee_) {
+			revert ERC20WithFeeFeeExceedsMaxFee(maxFee_);
+		}
+		if (feeCollectionAddress_ == address(0)) {
+			revert ERC20WithFeeInvalidFeeCollector(feeCollectionAddress_);
+		}
+
+		if (minter_ == address(0)) {
+			revert ERC20WithFeeInvalidMinter(minter_);
+		}
 
 		$.feeRate = feeRate_;
 		$.lastFeeChange = block.timestamp;
@@ -150,7 +161,9 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 	function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
 		address sender = _msgSender();
 		uint256 currentAllowance = allowance(sender, spender);
-		require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
+		if (currentAllowance < subtractedValue) {
+			revert ERC20WithFeesDecreasedAllowanceBelowZero();
+		}
 		unchecked {
 			_approve(sender, spender, currentAllowance - subtractedValue);
 		}
@@ -178,10 +191,9 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 
 		if ($.oracle != address(0)) {
 			uint256 reserve = IProofOfReserveOracle($.oracle).lockedValue();
-			require(
-				reserve >= amount + super.totalSupply(),
-				"ERC20WithFees: new total supply amount would exceed reserve balance"
-			);
+			if (reserve < amount + super.totalSupply()) {
+				revert ERC20WithFeeMintingLimitReached(reserve);
+			}
 		}
 		super._mint($._minterAddress, amount);
 	}
@@ -258,8 +270,12 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 	function setFeeRate(uint256 newFee_) public onlyOwner {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
-		require(newFee_ <= $.maxFee, "ERC20WithFees: fee cannot be more than max fee");
-		require(block.timestamp - $.lastFeeChange > $.feeChangeMinDelay, "ERC20WithFees: fee change delay not passed");
+		if (newFee_ > $.maxFee) {
+			revert ERC20WithFeeFeeExceedsMaxFee($.maxFee);
+		}
+		if (block.timestamp - $.lastFeeChange <= $.feeChangeMinDelay) {
+			revert ERC20WithFeeFeeChangeTooSoon($.feeChangeMinDelay);
+		}
 
 		$.lastFeeChange = block.timestamp;
 		$.feeRate = newFee_;
@@ -311,7 +327,9 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 	 */
 
 	function setFeeCollectionAddress(address newAddress) public onlyOwner {
-		require(newAddress != address(0), "ERC20WithFees: collection address cannot be zero");
+		if (newAddress == address(0)) {
+			revert ERC20WithFeeInvalidFeeCollector(newAddress);
+		}
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
 		unsetFeeExempt($._feeCollectionAddress);
@@ -324,7 +342,10 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 	 * @param newAddress The address to mint tokens
 	 */
 	function setMinterRole(address newAddress) public onlyOwner {
-		require(newAddress != address(0), "ERC20WithFees: collection address cannot be zero");
+		if (newAddress == address(0)) {
+			revert ERC20WithFeeInvalidMinter(newAddress);
+		}
+
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
 		unsetFeeExempt($._minterAddress);
@@ -334,15 +355,17 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 
 	/**
 	 * @dev Set the LockedGoldOracle address
-	 * @param oracleAddress The address for oracle
+	 * @param newAddress The new address for oracle
 	 * @return An bool representing successfully changing oracle address
 	 */
-	function setOracleAddress(address oracleAddress) external onlyOwner returns (bool) {
-		require(oracleAddress != address(0), "ERC20WithFees: oracle address cannot be zero");
+	function setOracleAddress(address newAddress) external onlyOwner returns (bool) {
+		if (newAddress == address(0)) {
+			revert ERC20WithFeeInvalidOracle(newAddress);
+		}
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
-		$.oracle = oracleAddress;
-		emit OracleAddressChanged(oracleAddress);
+		$.oracle = newAddress;
+		emit OracleAddressChanged(newAddress);
 		return true;
 	}
 
@@ -381,7 +404,9 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 	modifier onlyMinter() {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
-		require(msg.sender == $._minterAddress, "ERC20WithFees: only minter can call this function");
+		if (msg.sender != $._minterAddress) {
+			revert NotMinter(msg.sender);
+		}
 		_;
 	}
 }
