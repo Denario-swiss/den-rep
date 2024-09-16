@@ -111,9 +111,6 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 		uint256 balance = super.balanceOf(account);
 
 		uint256 fee = _calculateFee(account);
-		if (balance < fee) {
-			return 0;
-		}
 		return balance - fee;
 	}
 
@@ -254,11 +251,9 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 
 	function _payFee(address account) internal returns (uint256) {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-		uint256 balance = super.balanceOf(account);
 
 		uint256 fee = _calculateFee(account);
 		if (fee > 0) {
-			balance -= fee;
 			super._update(account, $._feeCollectionAddress, fee);
 		}
 		$._feeLastPaid[account] = block.timestamp;
