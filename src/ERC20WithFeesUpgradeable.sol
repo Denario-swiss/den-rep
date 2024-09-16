@@ -15,7 +15,6 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 
 	/// @custom:storage-location erc7201:storage.ERC20WithFeesStorage
 	struct ERC20WithFeesStorage {
-		uint8 _decimals;
 		address oracle;
 		mapping(address => uint256) _feeLastPaid;
 		mapping(address => bool) _feeExempt;
@@ -46,7 +45,6 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 		address initialOwner,
 		string memory name_,
 		string memory symbol_,
-		uint8 decimals_,
 		uint256 feeRate_,
 		uint256 maxFee_,
 		uint256 delayFeeChange_,
@@ -57,7 +55,6 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 			initialOwner,
 			name_,
 			symbol_,
-			decimals_,
 			feeRate_,
 			maxFee_,
 			delayFeeChange_,
@@ -70,7 +67,6 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 		address initialOwner,
 		string memory name_,
 		string memory symbol_,
-		uint8 decimals_,
 		uint256 feeRate_,
 		uint256 maxFee_,
 		uint256 delayFeeChange_,
@@ -82,7 +78,7 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
-		require(maxFee_ <= 10 ** decimals_, "ERC20WithFees: max fee too high");
+		require(maxFee_ <= 10 ** decimals(), "ERC20WithFees: max fee too high");
 		require(feeRate_ <= maxFee_, "ERC20WithFees: fee cannot be more than max fee");
 		require(
 			feeCollectionAddress_ != address(0),
@@ -90,11 +86,9 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 		);
 		require(minter_ != address(0), "ERC20WithFees: minter address cannot be the zero address");
 
-		$._decimals = decimals_;
-
 		$.feeRate = feeRate_;
 		$.lastFeeChange = block.timestamp;
-		$.feePrecision = 365 days * 10 ** decimals_;
+		$.feePrecision = 365 days * 10 ** decimals();
 		$.maxFee = maxFee_;
 		$.feeChangeMinDelay = delayFeeChange_;
 		$._feeCollectionAddress = feeCollectionAddress_;
@@ -353,8 +347,7 @@ abstract contract ERC20WithFeesUpgradeable is ERC20Upgradeable, Ownable2StepUpgr
 	}
 
 	function decimals() public view virtual override returns (uint8) {
-		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-		return $._decimals;
+		return 8;
 	}
 
 	function feeRate() public view returns (uint256) {

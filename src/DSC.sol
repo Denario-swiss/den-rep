@@ -17,7 +17,6 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 			msg.sender,
 			"Denario Silver Coin",
 			"DSC",
-			8,
 			1000000,
 			5000000,
 			(365 * 24 * 60 * 60) / 2,
