@@ -546,8 +546,9 @@ describe("DSC", () => {
 
 		it("cannot be zero address", async () => {
 			const { DSC } = await setup()
-			await expect(DSC.setMinterRole(ZeroAddress))
-				.to.be.revertedWithCustomError(DSC, `ERC20WithFeeInvalidMinter`)
+			await expect(
+				DSC.setMinterRole(ZeroAddress),
+			).to.be.revertedWithCustomError(DSC, `ERC20WithFeeInvalidMinter`)
 		})
 
 		it("set up new minter role", async () => {
