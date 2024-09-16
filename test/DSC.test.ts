@@ -13,6 +13,8 @@ import {
 	DSC__factory,
 	MockOracle,
 	MockOracle__factory,
+	ERC20WithFeesUpgradeable,
+	ERC20WithFeesUpgradeable__factory,
 } from "../typechain-types"
 import { BigNumberish, ZeroAddress } from "ethers"
 
@@ -78,6 +80,11 @@ const setup = async () => {
 
 describe("DSC", () => {
 	describe("Deployment", () => {
+		it("initialise only once", async () => {
+			const { instance } = await setup()
+			await expect(instance.initialize()).to.be.reverted
+		})
+
 		it("shown correct deployment data", async () => {
 			const { instance } = await setup()
 
@@ -138,6 +145,23 @@ describe("DSC", () => {
 
 			expect(balance).to.equal(0)
 			expect(balanceWithFees).to.equal(amount)
+		})
+
+		it("reports 0 balance if fee is more than balance", async () => {
+			const { DSC, users } = await setup()
+
+			const user = users[0]
+
+			const amount = BigInt(1)
+			await fundFromDeployer(DSC, user.address, amount)
+
+			await timeJumpForward(365 * 24 * 60 * 60 * 100 + 1)
+
+			const balance = await DSC.balanceOf(user.address)
+			const balanceWithFees = await DSC.balanceOfWithFee(user.address)
+
+			expect(balance).to.equal(0)
+			expect(balanceWithFees).to.equal(1)
 		})
 	})
 
@@ -656,6 +680,20 @@ describe("DSC", () => {
 				"ERC20WithFees: new total supply amount would exceed reserve balance",
 			)
 		})
+
+		it("allowa minting if under limit", async () => {
+			const { DSC, Oracle } = await setup()
+
+			await DSC.setOracleAddress(await Oracle.getAddress())
+
+			const max = await Oracle.lockedValue()
+			const supplyBefore = await DSC.totalSupply()
+
+			await DSC.mint(max - supplyBefore)
+
+			const supply = await DSC.totalSupply()
+			expect(supply).to.equal(max)
+		})
 	})
 
 	describe("Whitelist addresses", () => {
@@ -721,8 +759,6 @@ describe("DSC", () => {
 			const newDSC = await NewDSC.deploy()
 			await newDSC.waitForDeployment()
 
-			console.log("New DSCV2 deployed to:", newDSC.address)
-
 			DSCV2Address = await newDSC.getAddress()
 		})
 
@@ -741,8 +777,6 @@ describe("DSC", () => {
 			expect(owner).to.be.eq(contractOwner)
 
 			await DSC.upgradeToAndCall(DSCV2Address, "0x")
-
-			// console.log(res)
 		})
 	})
 
