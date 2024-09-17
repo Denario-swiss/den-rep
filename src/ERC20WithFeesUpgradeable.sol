@@ -83,19 +83,10 @@ abstract contract ERC20WithFeesUpgradeable is
 
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
-		if (maxFee_ > 10 ** decimals()) {
-			revert ERC20WithFeeFeeExceedsMaxFee(10 ** decimals());
-		}
-		if (feeRate_ > maxFee_) {
-			revert ERC20WithFeeFeeExceedsMaxFee(maxFee_);
-		}
-		if (feeCollectionAddress_ == address(0)) {
-			revert ERC20WithFeeInvalidFeeCollector(feeCollectionAddress_);
-		}
-
-		if (minter_ == address(0)) {
-			revert ERC20WithFeeInvalidMinter(minter_);
-		}
+		require(maxFee_ <= 10 ** decimals(), MaxFeeExceeded(10 ** decimals()));
+		require(feeRate_ <= maxFee_, MaxFeeExceeded(maxFee_));
+		require(feeCollectionAddress_ != address(0), InvalidFeeCollector(feeCollectionAddress_));
+		require(minter_ != address(0), InvalidMiner(minter_));
 
 		$.feeRate = feeRate_;
 		$.lastFeeChange = block.timestamp;
@@ -161,9 +152,8 @@ abstract contract ERC20WithFeesUpgradeable is
 	function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
 		address sender = _msgSender();
 		uint256 currentAllowance = allowance(sender, spender);
-		if (currentAllowance < subtractedValue) {
-			revert ERC20WithFeesDecreasedAllowanceBelowZero();
-		}
+		require(currentAllowance >= subtractedValue, AllowanceBelowZero());
+
 		unchecked {
 			_approve(sender, spender, currentAllowance - subtractedValue);
 		}
@@ -191,9 +181,7 @@ abstract contract ERC20WithFeesUpgradeable is
 
 		if ($.oracle != address(0)) {
 			uint256 reserve = IProofOfReserveOracle($.oracle).lockedValue();
-			if (reserve < amount + super.totalSupply()) {
-				revert ERC20WithFeeMintingLimitReached(reserve);
-			}
+			require(reserve >= amount + super.totalSupply(), MintingLimitExceeded(reserve));
 		}
 		super._mint($._minterAddress, amount);
 	}
@@ -270,12 +258,8 @@ abstract contract ERC20WithFeesUpgradeable is
 	function setFeeRate(uint256 newFee_) public onlyOwner {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
-		if (newFee_ > $.maxFee) {
-			revert ERC20WithFeeFeeExceedsMaxFee($.maxFee);
-		}
-		if (block.timestamp - $.lastFeeChange <= $.feeChangeMinDelay) {
-			revert ERC20WithFeeFeeChangeTooSoon($.feeChangeMinDelay);
-		}
+		require(newFee_ <= $.maxFee, MaxFeeExceeded($.maxFee));
+		require(block.timestamp - $.lastFeeChange > $.feeChangeMinDelay, FeeChangeTooSoon($.feeChangeMinDelay));
 
 		$.lastFeeChange = block.timestamp;
 		$.feeRate = newFee_;
@@ -327,9 +311,7 @@ abstract contract ERC20WithFeesUpgradeable is
 	 */
 
 	function setFeeCollectionAddress(address newAddress) public onlyOwner {
-		if (newAddress == address(0)) {
-			revert ERC20WithFeeInvalidFeeCollector(newAddress);
-		}
+		require(newAddress != address(0), InvalidFeeCollector(newAddress));
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
 		unsetFeeExempt($._feeCollectionAddress);
@@ -342,9 +324,7 @@ abstract contract ERC20WithFeesUpgradeable is
 	 * @param newAddress The address to mint tokens
 	 */
 	function setMinterRole(address newAddress) public onlyOwner {
-		if (newAddress == address(0)) {
-			revert ERC20WithFeeInvalidMinter(newAddress);
-		}
+		require(newAddress != address(0), InvalidMiner(newAddress));
 
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
@@ -359,9 +339,7 @@ abstract contract ERC20WithFeesUpgradeable is
 	 * @return An bool representing successfully changing oracle address
 	 */
 	function setOracleAddress(address newAddress) external onlyOwner returns (bool) {
-		if (newAddress == address(0)) {
-			revert ERC20WithFeeInvalidOracle(newAddress);
-		}
+		require(newAddress != address(0), InvalidOracle(newAddress));
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
 		$.oracle = newAddress;
@@ -404,9 +382,8 @@ abstract contract ERC20WithFeesUpgradeable is
 	modifier onlyMinter() {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 		address sender = _msgSender();
-		if (sender != $._minterAddress) {
-			revert NotMinter(sender);
-		}
+		require(sender == $._minterAddress, NotMinter(sender));
+
 		_;
 	}
 }

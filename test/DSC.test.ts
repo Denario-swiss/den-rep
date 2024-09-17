@@ -516,7 +516,7 @@ describe("DSC", () => {
 				DSC.setFeeCollectionAddress(ZeroAddress),
 			).to.be.revertedWithCustomError(
 				DSC,
-				`ERC20WithFeeInvalidFeeCollector`,
+				`InvalidFeeCollector`,
 			)
 		})
 
@@ -548,7 +548,7 @@ describe("DSC", () => {
 			const { DSC } = await setup()
 			await expect(
 				DSC.setMinterRole(ZeroAddress),
-			).to.be.revertedWithCustomError(DSC, `ERC20WithFeeInvalidMinter`)
+			).to.be.revertedWithCustomError(DSC, `InvalidMiner`)
 		})
 
 		it("set up new minter role", async () => {
@@ -582,7 +582,7 @@ describe("DSC", () => {
 			let max = await DSC.maxFee()
 			await expect(
 				DSC.setFeeRate(max + BigInt(1)),
-			).to.be.revertedWithCustomError(DSC, `ERC20WithFeeFeeExceedsMaxFee`)
+			).to.be.revertedWithCustomError(DSC, `MaxFeeExceeded`)
 			let feeLastChangedAfter = await DSC.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(feeLastChanged)
 		})
@@ -596,7 +596,7 @@ describe("DSC", () => {
 
 			await expect(
 				DSC.setFeeRate(fee + BigInt(1)),
-			).to.be.revertedWithCustomError(DSC, `ERC20WithFeeFeeChangeTooSoon`)
+			).to.be.revertedWithCustomError(DSC, `FeeChangeTooSoon`)
 
 			let feeLastChangedAfter = await DSC.lastFeeChange()
 			expect(feeLastChangedAfter).to.equal(feeLastChanged)
@@ -671,7 +671,7 @@ describe("DSC", () => {
 			const { DSC } = await setup()
 			await expect(
 				DSC.setOracleAddress(ZeroAddress),
-			).to.be.revertedWithCustomError(DSC, `ERC20WithFeeInvalidOracle`)
+			).to.be.revertedWithCustomError(DSC, `InvalidOracle`)
 		})
 
 		it("only owner", async () => {
@@ -704,7 +704,7 @@ describe("DSC", () => {
 				DSC.mint(max + BigInt(1)),
 			).to.be.revertedWithCustomError(
 				DSC,
-				`ERC20WithFeeMintingLimitReached`,
+				`MintingLimitExceeded`,
 			)
 		})
 
@@ -976,7 +976,7 @@ describe("DSC", () => {
 				),
 			).to.be.revertedWithCustomError(
 				DSC,
-				`ERC20WithFeesDecreasedAllowanceBelowZero`,
+				`AllowanceBelowZero`,
 			)
 		})
 	})
