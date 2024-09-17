@@ -2,11 +2,6 @@
 
 pragma solidity ^0.8.27;
 
-import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
-import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-
 import "./IProofOfReserveOracle.sol";
 
 interface IERC20WithFeesUpgradeableErrors {
