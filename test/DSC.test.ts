@@ -514,10 +514,7 @@ describe("DSC", () => {
 			const { DSC } = await setup()
 			await expect(
 				DSC.setFeeCollectionAddress(ZeroAddress),
-			).to.be.revertedWithCustomError(
-				DSC,
-				`InvalidFeeCollector`,
-			)
+			).to.be.revertedWithCustomError(DSC, `InvalidFeeCollector`)
 		})
 
 		it("Set new fee collector", async () => {
@@ -702,10 +699,7 @@ describe("DSC", () => {
 
 			await expect(
 				DSC.mint(max + BigInt(1)),
-			).to.be.revertedWithCustomError(
-				DSC,
-				`MintingLimitExceeded`,
-			)
+			).to.be.revertedWithCustomError(DSC, `MintingLimitExceeded`)
 		})
 
 		it("allowa minting if under limit", async () => {
@@ -974,10 +968,7 @@ describe("DSC", () => {
 					spender.address,
 					initialBalance,
 				),
-			).to.be.revertedWithCustomError(
-				DSC,
-				`AllowanceBelowZero`,
-			)
+			).to.be.revertedWithCustomError(DSC, `AllowanceBelowZero`)
 		})
 	})
 })
