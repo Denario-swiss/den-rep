@@ -13,15 +13,16 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	}
 
 	function initialize() public initializer {
+		address msgSender = _msgSender();
 		__ERC20WithFees_init(
-			msg.sender,
+			msgSender,
 			"Denario Silver Coin",
 			"DSC",
 			1000000,
 			5000000,
 			(365 * 24 * 60 * 60) / 2,
-			msg.sender,
-			msg.sender
+			msgSender,
+			msgSender
 		);
 	}
 

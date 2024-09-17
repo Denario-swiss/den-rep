@@ -403,9 +403,9 @@ abstract contract ERC20WithFeesUpgradeable is
 	 */
 	modifier onlyMinter() {
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
-
-		if (msg.sender != $._minterAddress) {
-			revert NotMinter(msg.sender);
+		address sender = _msgSender();
+		if (sender != $._minterAddress) {
+			revert NotMinter(sender);
 		}
 		_;
 	}
