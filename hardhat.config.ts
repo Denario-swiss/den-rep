@@ -27,17 +27,13 @@ const config: HardhatUserConfig = {
 		hardhat: {
 			initialBaseFeePerGas: 0, // to fix : https://github.com/sc-forks/solidity-coverage/issues/652, see https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136
 		},
-		mumbai: {
-			url: node_url("mumbai"),
-			accounts: accounts("mumbai"),
+		amoy: {
+			url: node_url("amoy"),
+			accounts: accounts("amoy"),
 		},
 		polygon: {
 			url: node_url("polygon"),
 			accounts: accounts("polygon"),
-		},
-		sepolia: {
-			url: node_url("sepolia"),
-			accounts: accounts("sepolia"),
 		},
 	},
 
@@ -48,6 +44,7 @@ const config: HardhatUserConfig = {
 	paths: {
 		sources: "src",
 	},
+
 	gasReporter: {
 		currency: "USD",
 		gasPrice: 100,
@@ -55,6 +52,7 @@ const config: HardhatUserConfig = {
 		coinmarketcap: process.env.COINMARKETCAP_API_KEY,
 		maxMethodDiff: 10,
 	},
+
 	mocha: {
 		timeout: 20000,
 	},

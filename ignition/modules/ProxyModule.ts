@@ -39,7 +39,7 @@ export const DSCModule = buildModule("DSCModule", (builder) => {
 	const { proxy } = builder.useModule(ProxyModule)
 
 	// Create a contract instance using the deployed proxy's address.
-	const symbol = process.env.TOKEN_SYMBOL || "DTC"
+	const symbol = "DSC"
 	const instance = builder.contractAt(symbol, proxy)
 
 	return { instance, proxy }
