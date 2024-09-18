@@ -6,18 +6,21 @@ const ProxyModule = buildModule("ProxyModule", (builder) => {
 	const implementation = builder.contract("DSC")
 
 	// Fetch environment variables for the implementation contract.
-	const _tokenName = process.env.TOKEN_NAME || "Denario Test Coin"
-	const _tokenSymbol = process.env.TOKEN_SYMBOL || "DTC"
-	const _minterAddress = process.env.MINTER_ADDRESS || "0x80085"
-	const _treasuryAddress = process.env.TREASURY_ADDRESS || "0x80085"
-	const _ownerAddress = process.env.OWNER_ADDRESS || ""
+	const _tokenName = process.env.TOKEN_NAME || "Denario Silver Coin"
+	const _tokenSymbol = process.env.TOKEN_SYMBOL || "DSC"
+
+	// Use provided addresses or fallback to internal hardhat addresses.
+	const account = (a) => builder.getAccount(a)
+	const _ownerAddress = process.env.OWNER_ADDRESS || account(0)
+	const _minterAddress = process.env.MINTER_ADDRESS || account(0)
+	const _feeCollectionAddress = process.env.TREASURY_ADDRESS || account(0)
 
 	// Create the implementation contract with the provided parameters.
 	const args = [
 		_tokenName,
 		_tokenSymbol,
+		_feeCollectionAddress,
 		_minterAddress,
-		_treasuryAddress,
 		_ownerAddress,
 	]
 
@@ -39,8 +42,7 @@ export const DSCModule = buildModule("DSCModule", (builder) => {
 	const { proxy } = builder.useModule(ProxyModule)
 
 	// Create a contract instance using the deployed proxy's address.
-	const symbol = "DSC"
-	const instance = builder.contractAt(symbol, proxy)
+	const instance = builder.contractAt("DSC", proxy)
 
 	return { instance, proxy }
 })

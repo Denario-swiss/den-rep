@@ -15,7 +15,7 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	function initialize(
 		string memory _name,
 		string memory _symbol,
-		address _treasuryAddress,
+		address _feeCollectionAddress,
 		address _minterAddress,
 		address _ownerAddress
 	) public initializer {
@@ -26,7 +26,7 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 			1000000,
 			5000000,
 			(365 * 24 * 60 * 60) / 2,
-			_treasuryAddress,
+			_feeCollectionAddress,
 			_minterAddress
 		);
 	}
