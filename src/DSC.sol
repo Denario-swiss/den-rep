@@ -13,14 +13,14 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	}
 
 	function initialize(
-		address _initialOwner,
+		address _ownerAddress,
 		string memory _name,
 		string memory _symbol,
 		address _feeCollectionAddress,
 		address _minterAddress
 	) public initializer {
 		__ERC20WithFees_init(
-			_initialOwner,
+			_ownerAddress,
 			_name,
 			_symbol,
 			1000000,
