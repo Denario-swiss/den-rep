@@ -17,8 +17,11 @@ After setting required parameters, run the following command to deploy the contr
 
 ### Deploy:
 
+If ./ignition/parameters/<network>/parameters.json is not present, create it by, using the example params file.
+
 ```bash
-npx hardhat ignition deploy <module> --network <network>
+npx hardhat ignition deploy <module>  --parameters ignition/parameters/<network>/parameters.json --network <network>
+
 ```
 
 ### Verify deployed contract:

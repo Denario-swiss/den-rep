@@ -1,27 +1,24 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules"
-import { ethers } from "hardhat"
 
 const ProxyModule = buildModule("ProxyModule", (builder) => {
 	// Deploy the implementation contract
 	const implementation = builder.contract("DSC")
 
 	// Fetch environment variables for the implementation contract.
-	const _tokenName = process.env.TOKEN_NAME || "Denario Silver Coin"
-	const _tokenSymbol = process.env.TOKEN_SYMBOL || "DSC"
 
-	// Use provided addresses or fallback to internal hardhat addresses.
-	const account = (a) => builder.getAccount(a)
-	const _ownerAddress = process.env.OWNER_ADDRESS || account(0)
-	const _minterAddress = process.env.MINTER_ADDRESS || account(0)
-	const _feeCollectionAddress = process.env.TREASURY_ADDRESS || account(0)
+	const _ownerAddress = builder.getParameter("ownerAddress")
+	const _tokenName = builder.getParameter("name", "Denario Silver Coin")
+	const _tokenSymbol = builder.getParameter("symbol", "DSC")
+	const _minterAddress = builder.getParameter("minterAddress")
+	const _feeCollectionAddress = builder.getParameter("feeCollectionAddress")
 
 	// Create the implementation contract with the provided parameters.
 	const args = [
+		_ownerAddress,
 		_tokenName,
 		_tokenSymbol,
 		_feeCollectionAddress,
 		_minterAddress,
-		_ownerAddress,
 	]
 
 	// Encode the initialize function call for the contract.

@@ -1,0 +1,10 @@
+{
+    "ProxyModule": {
+        "name": "Test Coin",
+        "symbol": "TC",
+        "minterAddress": "0x",
+        "feeCollectionAddress": "0x",
+        "ownerAddress": "0x"
+    },
+    "DSCModule": {}
+}

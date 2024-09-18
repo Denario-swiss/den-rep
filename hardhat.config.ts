@@ -31,6 +31,10 @@ const config: HardhatUserConfig = {
 			url: node_url("amoy"),
 			accounts: accounts("amoy"),
 		},
+		sepolia: {
+			url: node_url("sepolia"),
+			accounts: accounts("sepolia"),
+		},
 		polygon: {
 			url: node_url("polygon"),
 			accounts: accounts("polygon"),
