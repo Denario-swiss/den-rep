@@ -1,0 +1,10 @@
+{
+  "ProxyModule": {
+    "name": "Test Coin",
+    "symbol": "TC",
+    "minterAddress": "0x51A5b99a7D05cF9FeE836c4fdE12Daf46cFE4bfc",
+    "feeCollectionAddress": "0x5D9b4E268CC65A86A24761c7984b68F5636fcB13",
+    "ownerAddress": "0x51A5b99a7D05cF9FeE836c4fdE12Daf46cFE4bfc"
+  },
+  "DSCModule": {}
+}
