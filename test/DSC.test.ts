@@ -806,7 +806,7 @@ describe("DSC", () => {
 			const {} = await setup()
 
 			// Deploy new implementation
-			const NewDSC = await ethers.getContractFactory("DSC")
+			const NewDSC = await ethers.getContractFactory("DSCV2")
 			const newDSC = await NewDSC.deploy()
 			await newDSC.waitForDeployment()
 
@@ -828,6 +828,12 @@ describe("DSC", () => {
 			expect(owner).to.be.eq(contractOwner)
 
 			await DSC.upgradeToAndCall(DSCV2Address, "0x")
+		})
+		it("Upgraded name is returned", async () => {
+			const { DSC, owner } = await setup()
+			await DSC.connect(owner).upgradeToAndCall(DSCV2Address, "0x")
+			expect(await DSC.name()).to.equal("DSCV2")
+			// expect(await DSC.version()).to.equal("2.0.0")
 		})
 		it("Ledger and state is preserved", async () => {
 			const { DSC, owner, minter, users, decimals, feePrecision } =

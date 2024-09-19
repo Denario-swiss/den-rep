@@ -19,10 +19,6 @@
     "typechain": "^8.3.2"
   },
   "scripts": {
-    "deploy": "npx hardhat ignition deploy ignition/modules/ProxyModule.ts --network localhost",
-    "deploy:hardhat": "npx hardhat ignition deploy ignition/modules/ProxyModule.ts --network hardhat --parameters ignition/parameters/hardhat/parameters.json",
-    "deploy:amoy": "npx hardhat ignition deploy ignition/modules/ProxyModule.ts --network polygonAmoy --parameters ignition/parameters/amoy.json",
-    "verify:amoy": "npx hardhat ignition verify chain-80002",
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
