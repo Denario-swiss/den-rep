@@ -35,6 +35,7 @@ const config: HardhatUserConfig = {
 			url: node_url("amoy"),
 			accounts: accounts("amoy"),
 			chainId: 80002,
+			gasPrice: 50000000000,
 		},
 		sepolia: {
 			url: node_url("sepolia"),

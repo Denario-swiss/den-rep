@@ -7,8 +7,8 @@ export const ProxyModule = buildModule("ProxyModule", (builder) => {
 	// Fetch environment variables for the implementation contract.
 
 	const _ownerAddress = builder.getParameter("ownerAddress")
-	const _tokenName = builder.getParameter("name", "Denario Silver Coin")
-	const _tokenSymbol = builder.getParameter("symbol", "DSC")
+	const _tokenName = builder.getParameter("name", "Denario Silver")
+	const _tokenSymbol = builder.getParameter("symbol", "DS")
 	const _minterAddress = builder.getParameter("minterAddress")
 	const _feeCollectionAddress = builder.getParameter("feeCollectionAddress")
 
