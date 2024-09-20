@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules"
 
-const ProxyModule = buildModule("ProxyModule", (builder) => {
+export const ProxyModule = buildModule("ProxyModule", (builder) => {
 	// Deploy the implementation contract
 	const implementation = builder.contract("DSC")
 
@@ -33,15 +33,3 @@ const ProxyModule = buildModule("ProxyModule", (builder) => {
 
 	return { proxy }
 })
-
-export const DSCModule = buildModule("DSCModule", (builder) => {
-	// Get the proxy from the previous module.
-	const { proxy } = builder.useModule(ProxyModule)
-
-	// Create a contract instance using the deployed proxy's address.
-	const instance = builder.contractAt("DSC", proxy)
-
-	return { instance, proxy }
-})
-
-export default DSCModule

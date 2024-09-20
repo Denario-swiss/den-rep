@@ -31,5 +31,9 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 		);
 	}
 
+	function version() public pure returns (string memory) {
+		return "1.0.0";
+	}
+
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }
