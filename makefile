@@ -19,5 +19,20 @@ upgrade:
 		--parameters ./ignition/parameters/localhost.json \
 		./ignition/modules/UpgradeModule.ts
 
-# "deploy:amoy": "npx hardhat ignition deploy ignition/modules/ProxyModule.ts --network polygonAmoy --parameters ignition/parameters/amoy.json",
-# "verify:amoy": "npx hardhat ignition verify chain-80002",
+# deploy token to amoy testnet
+deploy-amoy:
+	npx hardhat ignition deploy \
+		--network polygonAmoy \
+		--parameters ./ignition/parameters/amoy.json \
+		./ignition/modules/TokenModule.ts
+
+# verify deployed contract with polygonscan
+verify-amoy:
+	npx hardhat ignition verify chain-80002
+
+# deploy an upgraded token and assign it to the proxy on testnet
+upgrade-amoy:
+	npx hardhat ignition deploy \
+		--network polygonAmoy \
+		--parameters ./ignition/parameters/amoy.json \
+		./ignition/modules/UpgradeModule.ts

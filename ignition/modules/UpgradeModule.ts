@@ -7,7 +7,9 @@ const UpgradeModule = buildModule("UpgradeModule", (builder) => {
 
 	const newImplementation = builder.contract("DSCV2")
 
-	builder.call(instance, "upgradeToAndCall", [newImplementation, "0x"])
+	builder.call(instance, "upgradeToAndCall", [newImplementation, "0x"], {
+		from: builder.getAccount(0),
+	})
 
 	return { proxy }
 })
