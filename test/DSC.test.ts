@@ -4,7 +4,7 @@ import {
 } from "@nomicfoundation/hardhat-toolbox/network-helpers"
 import { expect } from "chai"
 import { ethers, ignition } from "hardhat"
-import DSCModule from "../ignition/modules/ProxyModule"
+import TokenModule from "../ignition/modules/TokenModule"
 import OracleModule from "../ignition/modules/OracleModule"
 import {
 	Proxy,
@@ -34,16 +34,13 @@ const setup = async () => {
 	const name = "Denario Test Coin"
 	const symbol = "DTC"
 
-	const { instance, proxy } = await ignition.deploy(DSCModule, {
+	const { instance, proxy } = await ignition.deploy(TokenModule, {
 		parameters: {
 			ProxyModule: {
 				name: name,
 				symbol: symbol,
 				minterAddress: minter.address,
 				feeCollectionAddress: treasury.address,
-				ownerAddress: owner.address,
-			},
-			DSCModule: {
 				ownerAddress: owner.address,
 			},
 		},
@@ -832,7 +829,7 @@ describe("DSC", () => {
 		it("Upgraded name is returned", async () => {
 			const { DSC, owner } = await setup()
 			await DSC.connect(owner).upgradeToAndCall(DSCV2Address, "0x")
-			expect(await DSC.name()).to.equal("DSCV2")
+			expect(await DSC.version()).to.equal("2.0.0")
 			// expect(await DSC.version()).to.equal("2.0.0")
 		})
 		it("Ledger and state is preserved", async () => {

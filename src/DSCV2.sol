@@ -19,9 +19,4 @@ contract DSCV2 is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	}
 
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-
-	// TODO: do not mutate the name but the version string
-	// function name() public pure override returns (string memory) {
-	// 	return "DSC";
-	// }
 }
