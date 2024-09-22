@@ -474,6 +474,30 @@ describe("DSC", () => {
 			)
 			expect(supplyAfter).to.equal(supplyBefore - burnAmount)
 		})
+
+		it("burns all tokens", async () => {
+			const { DSC, minter, users, decimals } = await setup()
+
+			const user = users[0]
+			const amount = ethers.parseUnits("100", decimals)
+			await fundFromDeployer(DSC, minter, user.address, amount)
+
+			await DSC.connect(user).approve(minter.address, amount)
+
+			await DSC.connect(user).approve(minter.address, amount)
+
+			timeJumpForward(MONTH)
+			const supplyBefore = await DSC.totalSupply.staticCall()
+			const balanceBefore = await DSC.balanceOf.staticCall(user.address)
+
+			await DSC.connect(minter).burnAllFrom(user.address)
+
+			const balanceAfter = await DSC.balanceOf.staticCall(user.address)
+			const supplyAfter = await DSC.totalSupply.staticCall()
+
+			expect(balanceAfter).to.equal(0)
+			expect(supplyAfter).to.closeTo(supplyBefore - balanceBefore, 10)
+		})
 	})
 
 	describe("Mint", () => {

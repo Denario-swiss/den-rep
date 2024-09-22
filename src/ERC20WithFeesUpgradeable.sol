@@ -206,6 +206,13 @@ abstract contract ERC20WithFeesUpgradeable is
 		_burn(account, value);
 	}
 
+	function burnAllFrom(address account) public onlyMinter {
+		uint256 amount = balanceOf(account);
+		_spendAllowance(account, _msgSender(), amount);
+
+		_burn(account, amount);
+	}
+
 	/**
 	 * @notice returns the last time the fee was deducted for the given account
 	 * @dev returns 0 if the account has never had a fee deducted -> never held tokens
