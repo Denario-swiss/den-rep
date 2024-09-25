@@ -1,34 +1,34 @@
-import 'dotenv/config'
-import fs from 'fs'
+import "dotenv/config"
+import fs from "fs"
 import {
 	HDAccountsUserConfig,
 	HttpNetworkUserConfig,
 	NetworksUserConfig,
 	HardhatNetworkAccountUserConfig,
-} from 'hardhat/types'
+} from "hardhat/types"
 
 export function node_url(networkName: string): string {
 	if (networkName) {
-		const uri = process.env['ETH_NODE_URI_' + networkName.toUpperCase()]
-		if (uri && uri !== '') {
+		const uri = process.env["ETH_NODE_URI_" + networkName.toUpperCase()]
+		if (uri && uri !== "") {
 			return uri
 		}
 	}
 
-	if (networkName === 'localhost') {
+	if (networkName === "localhost") {
 		// do not use ETH_NODE_URI
-		return 'http://localhost:8545'
+		return "http://localhost:8545"
 	}
 
 	let uri = process.env.ETH_NODE_URI
 	if (uri) {
-		uri = uri.replace('{{networkName}}', networkName)
+		uri = uri.replace("{{networkName}}", networkName)
 	}
-	if (!uri || uri === '') {
+	if (!uri || uri === "") {
 		// throw new Error(`environment variable "ETH_NODE_URI" not configured `);
-		return ''
+		return ""
 	}
-	if (uri.indexOf('{{') >= 0) {
+	if (uri.indexOf("{{") >= 0) {
 		throw new Error(
 			`invalid uri or network not supported by node provider : ${uri}`,
 		)
@@ -38,32 +38,33 @@ export function node_url(networkName: string): string {
 
 export function getKeysFromEnv(networkName?: string): string[] {
 	if (networkName) {
-		const keyList = process.env['KEYS_' + networkName.toUpperCase()]
+		const keyList = process.env["KEYS_" + networkName.toUpperCase()]
 
-		if (!keyList || keyList == '') {
+		if (!keyList || keyList == "") {
 			return []
 		}
-		let keys = keyList.split(',')
+		let keys = keyList.split(",")
 		return keys
 	}
 	const keyList = process.env.KEYS
-	if (!keyList || keyList === '') {
+	if (!keyList || keyList === "") {
 		return []
 	}
-	return keyList.split(',')
+	console.log(keyList.split(","))
+	return keyList.split(",")
 }
 
 export function getMnemonic(networkName?: string): string {
 	if (networkName) {
-		const mnemonic = process.env['MNEMONIC_' + networkName.toUpperCase()]
-		if (mnemonic && mnemonic !== '') {
+		const mnemonic = process.env["MNEMONIC_" + networkName.toUpperCase()]
+		if (mnemonic && mnemonic !== "") {
 			return mnemonic
 		}
 	}
 
 	const mnemonic = process.env.MNEMONIC
-	if (!mnemonic || mnemonic === '') {
-		return 'test test test test test test test test test test test junk'
+	if (!mnemonic || mnemonic === "") {
+		return "test test test test test test test test test test test junk"
 	}
 	return mnemonic
 }
@@ -77,14 +78,14 @@ export function addForkConfiguration(
 ): NetworksUserConfig {
 	// While waiting for hardhat PR: https://github.com/nomiclabs/hardhat/pull/1542
 	if (process.env.HARDHAT_FORK) {
-		process.env['HARDHAT_DEPLOY_FORK'] = process.env.HARDHAT_FORK
+		process.env["HARDHAT_DEPLOY_FORK"] = process.env.HARDHAT_FORK
 	}
 
 	const currentNetworkName = process.env.HARDHAT_FORK
 	let forkURL: string | undefined =
 		currentNetworkName && node_url(currentNetworkName)
 	let hardhatAccounts: HDAccountsUserConfig | undefined
-	if (currentNetworkName && currentNetworkName !== 'hardhat') {
+	if (currentNetworkName && currentNetworkName !== "hardhat") {
 		const currentNetwork = networks[
 			currentNetworkName
 		] as HttpNetworkUserConfig
@@ -92,8 +93,8 @@ export function addForkConfiguration(
 			forkURL = currentNetwork.url
 			if (
 				currentNetwork.accounts &&
-				typeof currentNetwork.accounts === 'object' &&
-				'mnemonic' in currentNetwork.accounts
+				typeof currentNetwork.accounts === "object" &&
+				"mnemonic" in currentNetwork.accounts
 			) {
 				hardhatAccounts = currentNetwork.accounts
 			}
@@ -118,7 +119,7 @@ export function addForkConfiguration(
 					? {
 							auto: false,
 							interval: process.env.MINING_INTERVAL.split(
-								',',
+								",",
 							).map((v) => parseInt(v)) as [number, number],
 						}
 					: undefined,

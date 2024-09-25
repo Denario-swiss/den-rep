@@ -1,4 +1,4 @@
-import { Contract } from 'ethers'
+import { Contract, Signer } from 'ethers'
 import { ethers } from 'hardhat'
 import { DSC } from "../../typechain-types"
 import { time } from "@nomicfoundation/hardhat-toolbox/network-helpers"
@@ -35,10 +35,11 @@ export function getRandomInt(min: number, max: number): number {
 
 export async function fundFromDeployer(
 	contract: DSC,
-	address: string,
+	from: Signer,
+	to: string,
 	amount: bigint,
 ) {
-	await contract.transfer(address, amount)
+	await contract.connect(from).transfer(to, amount)
 }
 
 export async function timeJumpForward  (timestamp: BigNumberish){

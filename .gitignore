@@ -14,3 +14,6 @@ node_modules
 cache
 
 deployments/localhost
+ignition/deployments/chain-31337
+ignition/deployments/chain-11155111
+*.local

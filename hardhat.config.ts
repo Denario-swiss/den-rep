@@ -4,6 +4,10 @@ import "@nomicfoundation/hardhat-toolbox"
 import { node_url, accounts } from "./utils/network"
 
 const config: HardhatUserConfig = {
+	sourcify: {
+		enabled: true,
+	},
+
 	solidity: {
 		compilers: [
 			{
@@ -27,27 +31,43 @@ const config: HardhatUserConfig = {
 		hardhat: {
 			initialBaseFeePerGas: 0, // to fix : https://github.com/sc-forks/solidity-coverage/issues/652, see https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136
 		},
-		mumbai: {
-			url: node_url("mumbai"),
-			accounts: accounts("mumbai"),
-		},
-		polygon: {
-			url: node_url("polygon"),
-			accounts: accounts("polygon"),
+		polygonAmoy: {
+			url: node_url("amoy"),
+			accounts: accounts("amoy"),
+			chainId: 80002,
+			gasPrice: 50000000000,
 		},
 		sepolia: {
 			url: node_url("sepolia"),
 			accounts: accounts("sepolia"),
 		},
+		polygon: {
+			url: node_url("polygon"),
+			accounts: accounts("polygon"),
+		},
 	},
 
 	etherscan: {
-		apiKey: process.env.ETHERSCAN_API_KEY,
+		apiKey: {
+			sepolia: process.env.ETHERSCAN_API_KEY || "",
+			polygonAmoy: process.env.POLYGONSCAN_API_KEY || "",
+		},
+		customChains: [
+			{
+				network: "polygonAmoy",
+				chainId: 80002,
+				urls: {
+					apiURL: "https://api-amoy.polygonscan.com/api",
+					browserURL: "https://amoy.polygonscan.com",
+				},
+			},
+		],
 	},
 
 	paths: {
 		sources: "src",
 	},
+
 	gasReporter: {
 		currency: "USD",
 		gasPrice: 100,
@@ -55,6 +75,7 @@ const config: HardhatUserConfig = {
 		coinmarketcap: process.env.COINMARKETCAP_API_KEY,
 		maxMethodDiff: 10,
 	},
+
 	mocha: {
 		timeout: 20000,
 	},

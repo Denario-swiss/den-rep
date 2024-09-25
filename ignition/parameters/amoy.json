@@ -1,0 +1,13 @@
+{
+  "ProxyModule": {
+    "name": "Denario Test Coin",
+    "symbol": "DTC",
+    "minterAddress": "0x79D867022e9F26a1d2A9f3993339ffF7D16DA53A",
+    "feeCollectionAddress": "0xB7063bb3312d429C56325F283008a1aEda4c2Eb0",
+    "ownerAddress": "0x79D867022e9F26a1d2A9f3993339ffF7D16DA53A",
+    "fee": 1000000,
+    "maxFee": 5000000,
+    "delayFeeUpdate": 15768000
+  },
+  "DSCModule": {}
+}
