@@ -1,10 +1,10 @@
 {
   "ProxyModule": {
-    "name": "Denario Silver",
-    "symbol": "DS",
-    "minterAddress": "0xe8De21dA7A8F131a1d910Bc44dB769110B600437",
-    "feeCollectionAddress": "0x5D9b4E268CC65A86A24761c7984b68F5636fcB13",
-    "ownerAddress": "0xe8De21dA7A8F131a1d910Bc44dB769110B600437"
+    "name": "Denario Test Coin",
+    "symbol": "DTC",
+    "minterAddress": "0x79D867022e9F26a1d2A9f3993339ffF7D16DA53A",
+    "feeCollectionAddress": "0xB7063bb3312d429C56325F283008a1aEda4c2Eb0",
+    "ownerAddress": "0x79D867022e9F26a1d2A9f3993339ffF7D16DA53A"
   },
   "DSCModule": {}
 }
