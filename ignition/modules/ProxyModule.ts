@@ -11,12 +11,21 @@ export const ProxyModule = buildModule("ProxyModule", (builder) => {
 	const _tokenSymbol = builder.getParameter("symbol", "DS")
 	const _minterAddress = builder.getParameter("minterAddress")
 	const _feeCollectionAddress = builder.getParameter("feeCollectionAddress")
+	const _fee = builder.getParameter("fee", 1000000)
+	const _maxFee = builder.getParameter("maxFee", 5000000)
+	const _delayFeeUpdate = builder.getParameter(
+		"delayFeeUpdate",
+		(365 * 24 * 60 * 60) / 2, // 15768000 seconds = 6 months
+	)
 
 	// Create the implementation contract with the provided parameters.
 	const args = [
 		_ownerAddress,
 		_tokenName,
 		_tokenSymbol,
+		_fee,
+		_maxFee,
+		_delayFeeUpdate,
 		_feeCollectionAddress,
 		_minterAddress,
 	]

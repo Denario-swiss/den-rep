@@ -16,6 +16,9 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 		address _ownerAddress,
 		string memory _name,
 		string memory _symbol,
+		uint256 _fee,
+		uint256 _maxFee,
+		uint256 _delayFeeUpdate,
 		address _feeCollectionAddress,
 		address _minterAddress
 	) public initializer {
@@ -23,9 +26,9 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 			_ownerAddress,
 			_name,
 			_symbol,
-			1000000,
-			5000000,
-			(365 * 24 * 60 * 60) / 2,
+			_fee,
+			_maxFee,
+			_delayFeeUpdate,
 			_feeCollectionAddress,
 			_minterAddress
 		);
