@@ -22,6 +22,10 @@ upgrade:
 		--parameters ./ignition/parameters/localhost.json \
 		./ignition/modules/UpgradeModule.ts
 
+### AMOY
+### AMOY
+### AMOY
+
 # deploy token to amoy testnet
 deploy-amoy:
 	npx hardhat ignition deploy \
@@ -39,3 +43,18 @@ upgrade-amoy:
 		--network polygonAmoy \
 		--parameters ./ignition/parameters/amoy.json \
 		./ignition/modules/UpgradeModule.ts
+
+### PRODUCTION
+### PRODUCTION
+### PRODUCTION
+
+# deploy token to amoy testnet
+deploy-polygon:
+	npx hardhat ignition deploy \
+		--network polygon \
+		--parameters ./ignition/parameters/polygon.json \
+		./ignition/modules/TokenModule.ts
+
+# verify deployed contract with polygonscan
+verify-polygon:
+	npx hardhat ignition verify chain-137
