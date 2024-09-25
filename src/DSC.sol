@@ -13,11 +13,11 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	}
 
 	function initialize(
+		address _ownerAddress,
 		string memory _name,
 		string memory _symbol,
 		address _feeCollectionAddress,
-		address _minterAddress,
-		address _ownerAddress
+		address _minterAddress
 	) public initializer {
 		__ERC20WithFees_init(
 			_ownerAddress,
@@ -29,6 +29,10 @@ contract DSC is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 			_feeCollectionAddress,
 			_minterAddress
 		);
+	}
+
+	function version() public pure returns (string memory) {
+		return "1.0.0";
 	}
 
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

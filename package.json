@@ -13,13 +13,12 @@
     "dotenv": "^16.4.5",
     "eslint": "^9.10.0",
     "ethers": "^6.13.2",
-    "hardhat": "^2.22.10",
+    "hardhat": "^2.22.11",
     "prettier-plugin-solidity": "1.4.1",
     "solhint": "^5.0.3",
     "typechain": "^8.3.2"
   },
   "scripts": {
-    "deploy": "npx hardhat ignition deploy ignition/modules/ProxyModule.ts --network localhost",
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",

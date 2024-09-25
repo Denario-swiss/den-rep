@@ -46,7 +46,7 @@ abstract contract ERC20WithFeesUpgradeable is
 	 * construction.
 	 */
 	function __ERC20WithFees_init(
-		address initialOwner,
+		address _ownerAddress,
 		string memory name_,
 		string memory symbol_,
 		uint256 feeRate_,
@@ -56,7 +56,7 @@ abstract contract ERC20WithFeesUpgradeable is
 		address minter_
 	) internal onlyInitializing {
 		__ERC20WithFees_init_unchained(
-			initialOwner,
+			_ownerAddress,
 			name_,
 			symbol_,
 			feeRate_,
@@ -68,7 +68,7 @@ abstract contract ERC20WithFeesUpgradeable is
 	}
 
 	function __ERC20WithFees_init_unchained(
-		address initialOwner,
+		address _ownerAddress,
 		string memory name_,
 		string memory symbol_,
 		uint256 feeRate_,
@@ -78,7 +78,7 @@ abstract contract ERC20WithFeesUpgradeable is
 		address minter_
 	) internal onlyInitializing {
 		__ERC20_init(name_, symbol_);
-		__Ownable_init(initialOwner);
+		__Ownable_init(_ownerAddress);
 
 		ERC20WithFeesStorage storage $ = _getERC20WithFeesStorage();
 
@@ -94,9 +94,8 @@ abstract contract ERC20WithFeesUpgradeable is
 		$.feeChangeMinDelay = delayFeeChange_;
 		$._feeCollectionAddress = feeCollectionAddress_;
 		$._minterAddress = minter_;
-
-		setFeeExempt(feeCollectionAddress_);
-		setFeeExempt(minter_);
+		$._feeExempt[feeCollectionAddress_] = true;
+		$._feeExempt[minter_] = true;
 	}
 
 	/**

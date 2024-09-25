@@ -4,7 +4,7 @@ import {
 } from "@nomicfoundation/hardhat-toolbox/network-helpers"
 import { expect } from "chai"
 import { ethers, ignition } from "hardhat"
-import DSCModule from "../ignition/modules/ProxyModule"
+import TokenModule from "../ignition/modules/TokenModule"
 import OracleModule from "../ignition/modules/OracleModule"
 import {
 	Proxy,
@@ -28,17 +28,23 @@ const MONTH = 30 * 24 * 60 * 60
 const YEAR = 365 * 24 * 60 * 60
 
 const setup = async () => {
-	const [owner, ...users] = await ethers.getSigners()
-	const minter = owner // fails users[0]
-	const treasury = owner // fails with users[0]
+	const [deployer, owner, minter, treasury, ...users] =
+		await ethers.getSigners()
 
-	const name = "Denario Silver Coin"
-	const symbol = "DSC"
+	const name = "Denario Test Coin"
+	const symbol = "DTC"
 
-	const { instance, proxy } = await ignition.deploy(DSCModule, {
+	const { instance, proxy } = await ignition.deploy(TokenModule, {
 		parameters: {
-			DSCModule: {},
+			ProxyModule: {
+				name: name,
+				symbol: symbol,
+				minterAddress: minter.address,
+				feeCollectionAddress: treasury.address,
+				ownerAddress: owner.address,
+			},
 		},
+		defaultSender: deployer.address,
 	})
 
 	const { oracle } = await ignition.deploy(OracleModule, {
@@ -47,13 +53,13 @@ const setup = async () => {
 		},
 	})
 
-	const dsc: DSC = DSC__factory.connect(await instance.getAddress(), owner)
+	const dsc: DSC = DSC__factory.connect(await proxy.getAddress(), owner)
 
 	const feeRate = await dsc.feeRate()
 	const decimals = await dsc.decimals()
 	const feeprecision = BigInt(365 * 24 * 60 * 60 * 10 ** Number(decimals))
 
-	await dsc.mint(SUPPLY)
+	await dsc.connect(minter).mint(SUPPLY)
 
 	const oracleInstance: MockOracle = MockOracle__factory.connect(
 		await oracle.getAddress(),
@@ -61,7 +67,7 @@ const setup = async () => {
 	)
 
 	return {
-		DSC: dsc,
+		DSC: dsc.connect(owner),
 		Oracle: oracleInstance,
 		instance: instance,
 		proxy: proxy,
@@ -73,8 +79,8 @@ const setup = async () => {
 		feePrecision: feeprecision,
 		owner: owner,
 		minter: minter,
-		treasury: treasury,
 		users: users,
+		deployer: deployer,
 	}
 }
 
@@ -86,28 +92,34 @@ describe("DSC", () => {
 		})
 
 		it("shown correct deployment data", async () => {
-			const { instance } = await setup()
+			const { instance, name, symbol, decimals } = await setup()
 
-			const name = await instance.name()
-			const symbol = await instance.symbol()
-			const decimals = await instance.decimals()
-			const totalSupply = await instance.totalSupply()
+			const actualName = await instance.name()
+			const actualSymbol = await instance.symbol()
+			const actualDecimals = await instance.decimals()
+			const actualSupply = await instance.totalSupply()
 
-			expect(name).to.equal("Denario Silver Coin")
-			expect(symbol).to.equal("DSC")
-			expect(decimals).to.equal(8)
-			expect(totalSupply).to.equal(SUPPLY)
+			expect(name).to.equal(actualName)
+			expect(symbol).to.equal(actualSymbol)
+			expect(decimals).to.equal(actualDecimals)
+			expect(SUPPLY).to.equal(actualSupply)
+		})
+
+		it("initial owner is correct", async () => {
+			const { DSC, owner } = await setup()
+			let actualOwner = await DSC.owner()
+			expect(actualOwner).to.equal(owner.address)
 		})
 	})
 
 	describe("Balance", () => {
 		it("shows correct balance", async () => {
-			const { DSC, users, decimals, feeRate } = await setup()
+			const { DSC, users, minter, decimals, feeRate } = await setup()
 
 			const user = users[1]
 
 			const amount = ethers.parseUnits("1", decimals)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			let balanceBefore = await DSC.balanceOf(user.address)
 			let balanceBeforeWithFees = await DSC.balanceOfWithFee(user.address)
@@ -132,13 +144,13 @@ describe("DSC", () => {
 			expect(balanceWithFeesAfter).to.equal(amount)
 		})
 		it("shoes correct balance after some time", async () => {
-			const { DSC, users, decimals, feeRate, feePrecision } =
+			const { DSC, minter, users, decimals, feeRate, feePrecision } =
 				await setup()
 
 			const user = users[1]
 
 			const amount = ethers.parseUnits("1", decimals)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			let balanceBefore = await DSC.balanceOf(user.address)
 			let balanceBeforeWithFees = await DSC.balanceOfWithFee(user.address)
@@ -167,11 +179,11 @@ describe("DSC", () => {
 		})
 
 		it("shows correct balance: dust", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 			const user = users[6]
 
 			const amount = ethers.parseUnits("0.00000001", decimals)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			await timeJumpForward(101 * 365 * 24 * 60 * 60)
 
@@ -183,12 +195,12 @@ describe("DSC", () => {
 		})
 
 		it("reports 0 balance if fee is more than balance", async () => {
-			const { DSC, users } = await setup()
+			const { DSC, minter, users } = await setup()
 
 			const user = users[0]
 
 			const amount = BigInt(1)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			await timeJumpForward(365 * 24 * 60 * 60 * 100 + 1)
 
@@ -202,12 +214,12 @@ describe("DSC", () => {
 
 	describe("Transfer", () => {
 		it("always possible to transfer all tokens", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 			let sender = users[0]
 			let receiver = users[1]
 
 			const amount = ethers.parseUnits("100", decimals)
-			await fundFromDeployer(DSC, sender.address, amount)
+			await fundFromDeployer(DSC, minter, sender.address, amount)
 
 			await timeJumpForward(365 * 24 * 60 * 60)
 
@@ -234,12 +246,12 @@ describe("DSC", () => {
 			expect(receiverFee).to.equal(0)
 		})
 		it("always possible to transfer all tokens: dust", async () => {
-			const { DSC, users } = await setup()
+			const { DSC, minter, users } = await setup()
 			let sender = users[0]
 			let receiver = users[1]
 
 			const amount: bigint = BigInt(1)
-			await fundFromDeployer(DSC, sender.address, amount)
+			await fundFromDeployer(DSC, minter, sender.address, amount)
 
 			await timeJumpForward(365 * 24 * 60 * 60)
 
@@ -268,15 +280,18 @@ describe("DSC", () => {
 
 	describe("Fee last paid", () => {
 		it("initialised after receiving tokens", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			let user = users[0]
 
 			const amount = ethers.parseUnits("100", decimals)
 
-			await fundFromDeployer(DSC, user.address, amount)
-
-			await DSC.transfer(user.address, amount)
+			await fundFromDeployer(
+				DSC,
+				minter,
+				user.address,
+				amount * BigInt(2),
+			)
 
 			const timeStamp = await time.latest()
 
@@ -285,15 +300,19 @@ describe("DSC", () => {
 		})
 
 		it("receiving tokens updates", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			let sender = users[0]
 			let receiver = users[1]
 
 			const amount = ethers.parseUnits("100", decimals)
-			await fundFromDeployer(DSC, sender.address, amount)
+			await fundFromDeployer(
+				DSC,
+				minter,
+				sender.address,
+				amount * BigInt(2),
+			)
 
-			await DSC.transfer(sender.address, amount)
 			let feeLastPaid = await DSC.feeLastPaid(receiver.address)
 
 			expect(feeLastPaid).to.equal(0)
@@ -308,11 +327,12 @@ describe("DSC", () => {
 
 	describe("Fee collection", () => {
 		it("trigger fee deduction", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 			const user = users[0]
 
 			await fundFromDeployer(
 				DSC,
+				minter,
 				user.address,
 				ethers.parseUnits("1", decimals),
 			)
@@ -322,7 +342,7 @@ describe("DSC", () => {
 			await DSC.connect(user).collectFees([user.address])
 		})
 		it("collects 100% fees", async () => {
-			const { DSC, users, decimals, feeRate } = await setup()
+			const { DSC, minter, users, decimals, feeRate } = await setup()
 
 			let necessaryTime =
 				(BigInt(10 ** Number(decimals)) / feeRate) *
@@ -332,7 +352,7 @@ describe("DSC", () => {
 			const user = users[0]
 			const amount = ethers.parseUnits("100", decimals)
 
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			await timeJumpForward(necessaryTime)
 
@@ -356,7 +376,7 @@ describe("DSC", () => {
 
 	describe("Calculate fees", () => {
 		it("fees deducted from balance correctly", async () => {
-			const { DSC, users, decimals, feeRate } = await setup()
+			const { DSC, minter, users, decimals, feeRate } = await setup()
 
 			const user = users[0]
 
@@ -364,7 +384,7 @@ describe("DSC", () => {
 			expect(await DSC.balanceOfWithFee(user.address)).to.equal(0)
 
 			const amount = ethers.parseUnits("100", decimals)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			const balanceBefore = await DSC.balanceOf(user.address)
 
@@ -384,13 +404,13 @@ describe("DSC", () => {
 			expect(fee).to.equal(expectedFee)
 		})
 		it("fees from dust amounts", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			const user = users[0]
 
 			const amount = ethers.parseUnits("0.00000001", decimals)
 
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 			const balanceBefore = await DSC.balanceOf(user.address)
 
 			expect(balanceBefore).to.equal(amount)
@@ -408,24 +428,24 @@ describe("DSC", () => {
 
 	describe("Burn", () => {
 		it("only by minter role", async () => {
-			const { instance, DSC, users, decimals } = await setup()
+			const { minter, DSC, users, decimals } = await setup()
 
 			let user = users[0]
 
 			const amount = ethers.parseUnits("100", decimals)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			await expect(
 				DSC.connect(user).burnFrom(user.address, amount),
-			).to.be.revertedWithCustomError(instance, "NotMinter")
+			).to.be.revertedWithCustomError(DSC, "NotMinter")
 		})
 
 		it("needs allowance", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			const user = users[0]
 			const amount = ethers.parseUnits("100", decimals)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			await expect(DSC.burnFrom(user.address, amount)).to.be.reverted
 		})
@@ -435,7 +455,7 @@ describe("DSC", () => {
 
 			const user = users[0]
 			const amount = ethers.parseUnits("100", decimals)
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 
 			await DSC.connect(user).approve(minter.address, amount)
 
@@ -443,7 +463,7 @@ describe("DSC", () => {
 			const supplyBefore = await DSC.totalSupply()
 
 			const burnAmount = ethers.parseUnits("1", decimals)
-			await DSC.burnFrom(user.address, burnAmount)
+			await DSC.connect(minter).burnFrom(user.address, burnAmount)
 
 			const balanceAfter = await DSC.balanceOf(user.address)
 			const supplyAfter = await DSC.totalSupply()
@@ -475,7 +495,7 @@ describe("DSC", () => {
 			const supplyBefore = await DSC.totalSupply()
 			const balanceBefore = await DSC.balanceOf(minter.address)
 
-			await DSC.mint(amount)
+			await DSC.connect(minter).mint(amount)
 
 			const supplyAfter = await DSC.totalSupply()
 			const balanceAfter = await DSC.balanceOf(minter.address)
@@ -623,11 +643,12 @@ describe("DSC", () => {
 		})
 
 		it("forgets outstanding debt with old fee rate", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			const user = users[0]
 			await fundFromDeployer(
 				DSC,
+				minter,
 				user.address,
 				ethers.parseUnits("1", decimals),
 			)
@@ -697,26 +718,26 @@ describe("DSC", () => {
 		})
 
 		it("limits token minting if set", async () => {
-			const { DSC, Oracle } = await setup()
+			const { DSC, minter, Oracle } = await setup()
 
 			await DSC.setOracleAddress(await Oracle.getAddress())
 
 			const max = await Oracle.lockedValue()
 
 			await expect(
-				DSC.mint(max + BigInt(1)),
+				DSC.connect(minter).mint(max + BigInt(1)),
 			).to.be.revertedWithCustomError(DSC, `MintingLimitExceeded`)
 		})
 
 		it("allowa minting if under limit", async () => {
-			const { DSC, Oracle } = await setup()
+			const { DSC, minter, Oracle } = await setup()
 
 			await DSC.setOracleAddress(await Oracle.getAddress())
 
 			const max = await Oracle.lockedValue()
 			const supplyBefore = await DSC.totalSupply()
 
-			await DSC.mint(max - supplyBefore)
+			await DSC.connect(minter).mint(max - supplyBefore)
 
 			const supply = await DSC.totalSupply()
 			expect(supply).to.equal(max)
@@ -782,7 +803,7 @@ describe("DSC", () => {
 			const {} = await setup()
 
 			// Deploy new implementation
-			const NewDSC = await ethers.getContractFactory("DSC")
+			const NewDSC = await ethers.getContractFactory("DSCV2")
 			const newDSC = await NewDSC.deploy()
 			await newDSC.waitForDeployment()
 
@@ -805,15 +826,22 @@ describe("DSC", () => {
 
 			await DSC.upgradeToAndCall(DSCV2Address, "0x")
 		})
+		it("Upgraded name is returned", async () => {
+			const { DSC, owner } = await setup()
+			await DSC.connect(owner).upgradeToAndCall(DSCV2Address, "0x")
+			expect(await DSC.version()).to.equal("2.0.0")
+			// expect(await DSC.version()).to.equal("2.0.0")
+		})
 		it("Ledger and state is preserved", async () => {
-			const { DSC, users, decimals, feePrecision } = await setup()
+			const { DSC, owner, minter, users, decimals, feePrecision } =
+				await setup()
 
 			const user = users[0]
 			const user2 = users[1]
 			const amount = ethers.parseUnits("100", decimals)
 			const approveAmount = ethers.parseUnits("50", decimals)
 
-			await fundFromDeployer(DSC, user.address, amount)
+			await fundFromDeployer(DSC, minter, user.address, amount)
 			const fundTs = await time.latest()
 
 			await DSC.connect(user).approve(user2.address, approveAmount)
@@ -833,7 +861,7 @@ describe("DSC", () => {
 				user2.address,
 			)
 
-			await DSC.upgradeToAndCall(DSCV2Address, "0x")
+			await DSC.connect(owner).upgradeToAndCall(DSCV2Address, "0x")
 
 			// Check if the state is preserved
 			const feeLastPaidAfter = await DSC.feeLastPaid(user.address)
@@ -884,14 +912,14 @@ describe("DSC", () => {
 
 	describe("Test increase allowance", () => {
 		it("increase allowance", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			const user = users[0]
 			const spender = users[1]
 
 			const amount = ethers.parseUnits("100", decimals)
 			const initialBalance = amount * BigInt(3)
-			await fundFromDeployer(DSC, user.address, initialBalance)
+			await fundFromDeployer(DSC, minter, user.address, initialBalance)
 
 			const allowanceBefore = await DSC.allowance(
 				user.address,
@@ -931,7 +959,7 @@ describe("DSC", () => {
 		})
 
 		it("decrease allowance", async () => {
-			const { DSC, users, decimals } = await setup()
+			const { DSC, minter, users, decimals } = await setup()
 
 			const user = users[0]
 			const spender = users[1]
@@ -939,7 +967,7 @@ describe("DSC", () => {
 			const initialBalance = ethers.parseUnits("100", decimals)
 			const amount = ethers.parseUnits("1", decimals)
 
-			await fundFromDeployer(DSC, user.address, initialBalance)
+			await fundFromDeployer(DSC, minter, user.address, initialBalance)
 
 			await DSC.connect(user).increaseAllowance(
 				spender.address,
