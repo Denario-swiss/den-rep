@@ -851,11 +851,10 @@ describe("DSC", () => {
 
 			await DSC.upgradeToAndCall(DSCV2Address, "0x")
 		})
-		it("Upgraded name is returned", async () => {
+		it("Upgraded version is returned", async () => {
 			const { DSC, owner } = await setup()
 			await DSC.connect(owner).upgradeToAndCall(DSCV2Address, "0x")
-			expect(await DSC.version()).to.equal("2.0.0")
-			// expect(await DSC.version()).to.equal("2.0.0")
+			expect(await DSC.version()).to.equal(2)
 		})
 		it("Ledger and state is preserved", async () => {
 			const { DSC, owner, minter, users, decimals, feePrecision } =

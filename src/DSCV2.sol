@@ -14,8 +14,8 @@ contract DSCV2 is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 		_disableInitializers();
 	}
 
-	function version() public pure returns (string memory) {
-		return "2.0.0";
+	function version() public pure returns (int8) {
+		return 2;
 	}
 
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
