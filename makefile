@@ -12,6 +12,9 @@ deploy:
 		--parameters ./ignition/parameters/localhost.json \
 		./ignition/modules/TokenModule.ts
 
+check:
+	npm run coverage
+
 # deploy an upgraded token and assign it to the proxy
 upgrade:
 	npx hardhat ignition deploy \

@@ -15,7 +15,7 @@ import {
 	ERC20WithFeesUpgradeable,
 	ERC20WithFeesUpgradeable__factory,
 } from "../typechain-types"
-import { BigNumberish, ZeroAddress } from "ethers"
+import { ZeroAddress } from "ethers"
 import {
 	setupUser,
 	fundFromDeployer,
@@ -33,6 +33,9 @@ const setup = async () => {
 
 	const name = "Denario Test Coin"
 	const symbol = "DTC"
+	const feeRate = BigInt(2500000)
+	const maxFeeRate = BigInt(5000000)
+	const delayFeeChange = (365 * 24 * 60 * 60) / 2
 
 	const { instance, proxy } = await ignition.deploy(TokenModule, {
 		parameters: {
@@ -42,6 +45,9 @@ const setup = async () => {
 				minterAddress: minter.address,
 				feeCollectionAddress: treasury.address,
 				ownerAddress: owner.address,
+				fee: feeRate,
+				maxFeeRate: maxFeeRate,
+				delayFeeChange: delayFeeChange,
 			},
 		},
 		defaultSender: deployer.address,
@@ -55,7 +61,8 @@ const setup = async () => {
 
 	const dsc: DSC = DSC__factory.connect(await proxy.getAddress(), owner)
 
-	const feeRate = await dsc.feeRate()
+	// const feeRate = await dsc.feeRate()
+
 	const decimals = await dsc.decimals()
 	const feeprecision = BigInt(365 * 24 * 60 * 60 * 10 ** Number(decimals))
 
@@ -74,6 +81,8 @@ const setup = async () => {
 		name: name,
 		symbol: symbol,
 		feeRate: feeRate,
+		maxFeeRate: maxFeeRate,
+		delayFeeChange: delayFeeChange,
 		decimals: decimals,
 		feeCollector: treasury,
 		feePrecision: feeprecision,
@@ -92,7 +101,15 @@ describe("DSC", () => {
 		})
 
 		it("shown correct deployment data", async () => {
-			const { instance, name, symbol, decimals } = await setup()
+			const {
+				instance,
+				name,
+				symbol,
+				decimals,
+				feeRate,
+				maxFeeRate,
+				delayFeeChange,
+			} = await setup()
 
 			const actualName = await instance.name()
 			const actualSymbol = await instance.symbol()
@@ -103,6 +120,14 @@ describe("DSC", () => {
 			expect(symbol).to.equal(actualSymbol)
 			expect(decimals).to.equal(actualDecimals)
 			expect(SUPPLY).to.equal(actualSupply)
+
+			const actualFeeRate = await instance.feeRate()
+			const actualMaxFeeRate = await instance.maxFee()
+			const actualDelayFeeChange = await instance.feeChangeMinDelay()
+
+			expect(feeRate).to.equal(actualFeeRate)
+			expect(maxFeeRate).to.equal(actualMaxFeeRate)
+			expect(delayFeeChange).to.equal(actualDelayFeeChange)
 		})
 
 		it("initial owner is correct", async () => {
