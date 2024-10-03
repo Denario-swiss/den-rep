@@ -93,7 +93,7 @@ const setup = async () => {
 	}
 }
 
-describe("DSC", () => {
+describe("Denario Silver Coin (DSC)", () => {
 	describe("Deployment", () => {
 		it("initialise only once", async () => {
 			const { instance } = await setup()
