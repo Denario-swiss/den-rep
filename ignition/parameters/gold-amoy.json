@@ -1,7 +1,7 @@
 {
-  "ProxyModule": {
-    "name": "Amoy Test Coin",
-    "symbol": "ATC",
+  "GoldProxyModule": {
+    "name": "Amoy Test Gold",
+    "symbol": "ATG",
     "minterAddress": "0xe8De21dA7A8F131a1d910Bc44dB769110B600437",
     "feeCollectionAddress": "0x715b750e5908049B0B9E2B404c5CFCD01ACC75cA",
     "ownerAddress": "0x715b750e5908049B0B9E2B404c5CFCD01ACC75cA",
@@ -9,5 +9,5 @@
     "maxFee": 5000000,
     "delayFeeUpdate": 15768000
   },
-  "DSCModule": {}
+  "DGCModule": {}
 }
