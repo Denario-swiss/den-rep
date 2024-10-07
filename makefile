@@ -55,6 +55,13 @@ deploy-polygon-dsc:
 		--parameters ./ignition/parameters/polygon.json \
 		./ignition/modules/TokenModule.ts
 
+# upgrade token
+upgrade-polygon-dsc:
+	npx hardhat ignition deploy \
+		--network polygon \
+		--parameters ./ignition/parameters/polygon.json \
+		./ignition/modules/UpgradeModule.ts
+
 # verify deployed contract with polygonscan
 verify-polygon-dsc:
 	npx hardhat ignition verify chain-137
