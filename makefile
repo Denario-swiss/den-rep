@@ -22,9 +22,9 @@ upgrade:
 		--parameters ./ignition/parameters/localhost.json \
 		./ignition/modules/UpgradeModule.ts
 
-### AMOY
-### AMOY
-### AMOY
+### AMOY TESTNET SILVER
+### AMOY TESTNET SILVER
+### AMOY TESTNET SILVER
 
 # deploy token to amoy testnet
 deploy-amoy:
@@ -44,17 +44,53 @@ upgrade-amoy:
 		--parameters ./ignition/parameters/amoy.json \
 		./ignition/modules/UpgradeModule.ts
 
-### PRODUCTION
-### PRODUCTION
-### PRODUCTION
+### POLYGON PRODUCTION SILVER
+### POLYGON PRODUCTION SILVER
+### POLYGON PRODUCTION SILVER
 
-# deploy token to amoy testnet
-deploy-polygon:
+# deploy token to polygon
+deploy-polygon-dsc:
 	npx hardhat ignition deploy \
 		--network polygon \
 		--parameters ./ignition/parameters/polygon.json \
 		./ignition/modules/TokenModule.ts
 
 # verify deployed contract with polygonscan
-verify-polygon:
+verify-polygon-dsc:
+	npx hardhat ignition verify chain-137
+
+### AMOY TESTNET GOLD
+### AMOY TESTNET GOLD
+### AMOY TESTNET GOLD
+
+deploy-gold-amoy:
+	npx hardhat ignition deploy \
+		--network polygonAmoy \
+		--parameters ./ignition/parameters/gold-amoy.json \
+		./ignition/modules/GoldModule.ts
+
+# verify deployed contract with polygonscan
+verify-gold-amoy:
+	npx hardhat ignition verify chain-80002
+
+# deploy an upgraded token and assign it to the proxy on testnet
+upgrade-gold-amoy:
+	npx hardhat ignition deploy \
+		--network polygonAmoy \
+		--parameters ./ignition/parameters/gold-amoy.json \
+		./ignition/modules/GoldUpgradeModule.ts
+
+### POLYGON PRODUCTION GOLD
+### POLYGON PRODUCTION GOLD
+### POLYGON PRODUCTION GOLD
+
+# deploy token to polygon
+deploy-polygon-dgc:
+	npx hardhat ignition deploy \
+		--network polygon \
+		--parameters ./ignition/parameters/gold-polygon.json \
+		./ignition/modules/GoldModule.ts
+
+# verify deployed contract with polygonscan
+verify-polygon-dgc:
 	npx hardhat ignition verify chain-137

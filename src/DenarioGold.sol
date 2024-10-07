@@ -1,21 +1,41 @@
 // SPDX-License-Identifier: MIT
 // Compatible with OpenZeppelin Contracts ^5.0.0
-// This is a template contract for upgrading the original DSC contract
-
 pragma solidity ^0.8.27;
 
 import "./ERC20WithFeesUpgradeableV2.sol";
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract DSCV2 is ERC20WithFeesUpgradeableV2, UUPSUpgradeable {
+contract DenarioGold is ERC20WithFeesUpgradeableV2, UUPSUpgradeable {
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
 		_disableInitializers();
 	}
 
+	function initialize(
+		address _ownerAddress,
+		string memory _name,
+		string memory _symbol,
+		uint256 _fee,
+		uint256 _maxFee,
+		uint256 _delayFeeUpdate,
+		address _feeCollectionAddress,
+		address _minterAddress
+	) public initializer {
+		__ERC20WithFees_init(
+			_ownerAddress,
+			_name,
+			_symbol,
+			_fee,
+			_maxFee,
+			_delayFeeUpdate,
+			_feeCollectionAddress,
+			_minterAddress
+		);
+	}
+
 	function version() public pure returns (int8) {
-		return 2;
+		return 1;
 	}
 
 	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

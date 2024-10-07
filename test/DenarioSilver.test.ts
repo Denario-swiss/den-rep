@@ -10,6 +10,7 @@ import {
 	Proxy,
 	DSC,
 	DSC__factory,
+	DSCV2,
 	MockOracle,
 	MockOracle__factory,
 	ERC20WithFeesUpgradeable,
@@ -93,7 +94,7 @@ const setup = async () => {
 	}
 }
 
-describe("DSC", () => {
+describe("Denario Silver Coin (DSC)", () => {
 	describe("Deployment", () => {
 		it("initialise only once", async () => {
 			const { instance } = await setup()
@@ -932,6 +933,20 @@ describe("DSC", () => {
 			const balanceAfter2 = await DSC.balanceOf(user2.address)
 			expect(balanceAfter2).to.equal(approveAmount)
 		})
+		// it("Set lower fee rate", async () => {
+		// 	const { DSC, owner } = await setup()
+
+		// 	await DSC.connect(owner).upgradeToAndCall(DSCV2Address, "0x")
+		// 	const oldFee = await DSC.feeRate()
+
+		// 	await DSC.connect(owner).reduceFeeRate(0)
+
+		// 	const currentFee = await DSC.feeRate()
+		// 	expect(currentFee).to.be.lessThan(oldFee)
+
+		// 	const newFee = await DSC.feeRate()
+		// 	expect(newFee).to.equal(0)
+		// })
 	})
 
 	describe("Test increase allowance", () => {
