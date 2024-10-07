@@ -4,11 +4,11 @@
 
 pragma solidity ^0.8.27;
 
-import "./ERC20WithFeesUpgradeableV2.sol";
+import "./ERC20WithFeesUpgradeable.sol";
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract DSCV2 is ERC20WithFeesUpgradeableV2, UUPSUpgradeable {
+contract DenarioGoldV2 is ERC20WithFeesUpgradeable, UUPSUpgradeable {
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
 		_disableInitializers();
