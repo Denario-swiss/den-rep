@@ -1,7 +1,7 @@
 {
   "ProxyModule": {
-    "name": "Denario Silver Coin",
-    "symbol": "DSC",
+    "name": "Denario Gold Coin",
+    "symbol": "DGC",
     "minterAddress": "0x00",
     "feeCollectionAddress": "0x00",
     "ownerAddress": "0x00",
