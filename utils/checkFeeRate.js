@@ -6,8 +6,11 @@ async function main() {
 		contractAddress,
 	)
 
+	const name = await myContract.name()
+	console.log("name:", name)
+
 	const version = await myContract.version()
-	console.log("current version:", version)
+	console.log("version:", version)
 
 	const feeRate = await myContract.feeRate()
 	console.log("current fee rate:", feeRate.toString())
