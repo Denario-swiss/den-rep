@@ -3,7 +3,7 @@ import { ProxyModule } from "./ProxyModule"
 import { TokenModule } from "./TokenModule"
 
 const UpgradeModule = buildModule("UpgradeModule", (builder) => {
-	// const { instance, proxy } = builder.useModule(TokenModule)
+	const { instance, proxy } = builder.useModule(TokenModule)
 
 	// builder.call(instance, "upgradeToAndCall", [newImplementation, "0x"], {
 	// 	from: builder.getAccount(0),
@@ -13,7 +13,7 @@ const UpgradeModule = buildModule("UpgradeModule", (builder) => {
 
 	const newImplementation = builder.contract("DSCV2")
 
-	return { newImplementation }
+	return { newImplementation, proxy }
 })
 
 export default UpgradeModule
