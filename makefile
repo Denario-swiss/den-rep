@@ -1,4 +1,32 @@
 
+# gold timelock controller
+
+deploy-timelock-gold-hardhat:
+	npx hardhat ignition deploy \
+		ignition/modules/GoldTimelockController.ts \
+		--parameters ./ignition/parameters/timelock-gold.json \
+		--network localhost
+
+deploy-timelock-gold-amoy:
+	npx hardhat ignition deploy \
+		ignition/modules/GoldTimelockController.ts \
+		--parameters ./ignition/parameters/timelock-gold.json \
+		--network polygonAmoy
+
+verify-timelock-gold-amoy:
+	npx hardhat ignition verify chain-80002
+
+deploy-timelock-gold-polygon:
+	npx hardhat ignition deploy \
+		ignition/modules/GoldTimelockController.ts \
+		--parameters ./ignition/parameters/timelock-gold.json \
+		--network polygon
+
+verify-timelock-gold-polygon:
+	npx hardhat ignition verify chain-137
+
+#
+
 deploy-hardhat:
 	npx hardhat ignition deploy \
 		--network hardhat \
@@ -6,11 +34,17 @@ deploy-hardhat:
 
 # deploy the initial token and proxy
 
-deploy:
+deploy-silver:
 	npx hardhat ignition deploy \
 		--network localhost \
 		--parameters ./ignition/parameters/localhost.json \
 		./ignition/modules/TokenModule.ts
+
+deploy-gold:
+	npx hardhat ignition deploy \
+		--network localhost \
+		--parameters ./ignition/parameters/localhost.json \
+		./ignition/modules/GoldModule.ts
 
 check:
 	npm run coverage
