@@ -10,3 +10,5 @@ export const GoldModule = buildModule("GoldModule", (builder) => {
 
 	return { instance, proxy }
 })
+
+export default GoldModule
