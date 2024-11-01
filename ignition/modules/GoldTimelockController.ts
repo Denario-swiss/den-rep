@@ -6,10 +6,9 @@ export const GoldTimelockController = buildModule(
 		const minDelay = builder.getParameter("timelockDuration")
 		const proposers = builder.getParameter("proposers")
 		const executors = builder.getParameter("executors")
-		const admin = builder.getParameter("admin")
 
-		const args = [minDelay, proposers, executors, admin]
-		const timelock = builder.contract("TimelockController", args)
+		const args = [minDelay, proposers, executors]
+		const timelock = builder.contract("GoldTimelockController", args)
 
 		return { timelock }
 	},
